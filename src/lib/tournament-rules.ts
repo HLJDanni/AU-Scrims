@@ -1,6 +1,7 @@
 // Reglas de acceso a los torneos suizos. Compartido entre cliente y servidor.
 import { eloAverage, formatRank, rankValue, type LolTier, type Position } from "./lol";
 
+// Ids internos (BD): ELITE se muestra como "División Barón" y ASCENSO como "División Heraldo"
 export type Division = "ELITE" | "ASCENSO";
 
 export const MIN_RATING = 7000;
@@ -12,9 +13,9 @@ export const MIN_TEAMS = 4;
 const MASTER = rankValue("MASTER", null, 0);
 const PLATINUM_II = rankValue("PLATINUM", 2, 0);
 
-export const DIVISIONS: Record<Division, { id: Division; name: string; range: string; icon: LolTier; color: string; min: number; max: number }> = {
-  ELITE: { id: "ELITE", name: "División Élite", range: "Maestro – Retador", icon: "CHALLENGER", color: "#F4C874", min: MASTER, max: Infinity },
-  ASCENSO: { id: "ASCENSO", name: "División Ascenso", range: "Platino II – Diamante I", icon: "DIAMOND", color: "#576BCE", min: PLATINUM_II, max: MASTER },
+export const DIVISIONS: Record<Division, { id: Division; name: string; short: string; range: string; icon: LolTier; color: string; min: number; max: number }> = {
+  ELITE: { id: "ELITE", name: "División Barón", short: "Barón", range: "Maestro – Retador", icon: "CHALLENGER", color: "#B57BFF", min: MASTER, max: Infinity },
+  ASCENSO: { id: "ASCENSO", name: "División Heraldo", short: "Heraldo", range: "Platino II – Diamante I", icon: "DIAMOND", color: "#0AC8B9", min: PLATINUM_II, max: MASTER },
 };
 
 /** División que corresponde a un ELO promedio (escala de rankValue), o null si no entra en ninguna. */

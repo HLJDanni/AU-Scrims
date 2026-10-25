@@ -37,8 +37,8 @@ export function TournamentsView() {
         onChange={setTab}
         className="mb-6"
         tabs={[
-          { id: "ELITE", label: "Élite", icon: <RankIcon tier="CHALLENGER" size={18} /> },
-          { id: "ASCENSO", label: "Ascenso", icon: <RankIcon tier="DIAMOND" size={18} /> },
+          { id: "ELITE", label: DIVISIONS.ELITE.short, icon: <RankIcon tier="CHALLENGER" size={18} /> },
+          { id: "ASCENSO", label: DIVISIONS.ASCENSO.short, icon: <RankIcon tier="DIAMOND" size={18} /> },
           { id: "REQUIREMENTS", label: "Requisitos", icon: <ClipboardCheck className="h-4 w-4" /> },
         ]}
       />

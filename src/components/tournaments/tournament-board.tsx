@@ -13,6 +13,7 @@ import { Skeleton, TeamEmblem } from "../ui/misc";
 import { Tabs, TabPanel } from "../ui/tabs";
 import { RankIcon } from "../ui/rank-icon";
 import { ENTRY_LABEL, STATUS_LABEL, type MatchDTO, type TournamentDetail } from "./types";
+import { SwissBracket } from "./swiss-bracket";
 
 type View = "bracket" | "table";
 
@@ -121,7 +122,7 @@ export function TournamentBoard({ id, onChanged }: { id: string; onChanged?: () 
               { id: "table", label: "Clasificación", icon: <ListOrdered className="h-3.5 w-3.5" /> },
             ]}
           />
-          <TabPanel id={view}>{view === "bracket" ? <Bracket data={data} onReport={setReporting} /> : <Standings data={data} />}</TabPanel>
+          <TabPanel id={view}>{view === "bracket" ? <SwissBracket data={data} onReport={setReporting} /> : <Standings data={data} />}</TabPanel>
         </>
       )}
 
@@ -189,81 +190,6 @@ function Podium({ data }: { data: TournamentDetail }) {
           </span>
         ))}
       </div>
-    </div>
-  );
-}
-
-function Bracket({ data, onReport }: { data: TournamentDetail; onReport: (m: MatchDTO) => void }) {
-  return (
-    <div className="flex gap-4 overflow-x-auto pb-3">
-      {data.rounds.map((r) => {
-        // Agrupar por récord previo al partido (2-0, 1-1, …), como en el Mundial
-        const groups = new Map<string, MatchDTO[]>();
-        for (const m of r.matches) {
-          const k = m.bye ? "Descanso" : m.recordA === m.recordB ? m.recordA : `${m.recordA} / ${m.recordB}`;
-          groups.set(k, [...(groups.get(k) ?? []), m]);
-        }
-        const ordered = [...groups.entries()].sort(([a], [b]) => (b === "Descanso" ? -1 : a === "Descanso" ? 1 : b.localeCompare(a)));
-        return (
-          <div key={r.round} className="w-64 shrink-0 space-y-3">
-            <p className="font-display text-xs font-bold uppercase tracking-[0.2em] text-gold-200">
-              Ronda {r.round}
-              {r.round === data.tournament.round && data.tournament.status === "ACTIVE" && <span className="ml-2 text-hex-200">· actual</span>}
-            </p>
-            {ordered.map(([record, matches]) => (
-              <div key={record} className="space-y-2">
-                <p className="text-[10px] font-semibold uppercase tracking-wider text-stone-400">{record}</p>
-                {matches.map((m) => (
-                  <MatchCard key={m.id} m={m} me={data.me.teamId} onReport={onReport} />
-                ))}
-              </div>
-            ))}
-          </div>
-        );
-      })}
-    </div>
-  );
-}
-
-function MatchCard({ m, me, onReport }: { m: MatchDTO; me: string; onReport: (m: MatchDTO) => void }) {
-  const mine = m.teamA.id === me || m.teamB?.id === me;
-  const Row = ({ team, score }: { team: MatchDTO["teamA"]; score: number | null }) => {
-    const won = m.winnerId === team.id;
-    const lost = Boolean(m.winnerId) && !won;
-    return (
-      <div className={cn("flex items-center gap-2 px-2.5 py-1.5", lost && "opacity-45")}>
-        <TeamEmblem team={team} size={22} />
-        <span className={cn("min-w-0 flex-1 truncate text-sm", won ? "font-semibold text-gold-50" : "text-stone-300")}>{team.name}</span>
-        {score !== null && <span className={cn("font-display text-sm font-bold", won ? "text-win" : "text-stone-400")}>{score}</span>}
-      </div>
-    );
-  };
-  return (
-    <div className={cn("overflow-hidden rounded-md border bg-void-900/80", mine ? "border-hex-200/50" : "border-void-500/70")}>
-      <Row team={m.teamA} score={m.scoreA} />
-      {m.bye ? (
-        <p className="border-t border-void-500/50 px-2.5 py-1.5 text-xs italic text-stone-400">Descanso · cuenta como victoria</p>
-      ) : (
-        <>
-          <div className="border-t border-void-500/50" />
-          <Row team={m.teamB!} score={m.scoreB} />
-        </>
-      )}
-      {!m.bye && (
-        <div className="flex items-center justify-between border-t border-void-500/50 bg-void-950/50 px-2.5 py-1">
-          <span className={cn("text-[10px] font-bold uppercase tracking-wider", m.bestOf === 3 ? "text-gold-300" : "text-stone-400")}>
-            Bo{m.bestOf}
-            {m.bestOf === 3 && " · decisivo"}
-          </span>
-          {m.canReport ? (
-            <button onClick={() => onReport(m)} className="text-[11px] font-semibold text-hex-100 hover:underline">
-              Registrar resultado
-            </button>
-          ) : (
-            !m.winnerId && <span className="text-[10px] text-stone-400">Pendiente</span>
-          )}
-        </div>
-      )}
     </div>
   );
 }

@@ -61,8 +61,8 @@ Mini torneos dentro de la app (**Torneos** en el menú), formato suizo como el M
 
 | División | ELO promedio de los 5 titulares |
 | --- | --- |
-| Élite | Maestro – Retador |
-| Ascenso | Platino II – Diamante I |
+| Barón | Maestro – Retador |
+| Heraldo | Platino II – Diamante I |
 
 Para jugar, además: **7,000 puntos de ranking** y **10 scrims ganados**. Quien no cumple no puede inscribirse; la pestaña *Requisitos* muestra qué le falta a cada equipo. Un coach elegible organiza el torneo de su división (uno abierto a la vez), coach o capitán inscriben al equipo y el organizador lo inicia (mínimo 4 equipos).
 
@@ -74,12 +74,12 @@ Para jugar, además: **7,000 puntos de ranking** y **10 scrims ganados**. Quien 
 npm run simulate:tournaments
 ```
 
-Crea equipos para cada escenario (Élite, Ascenso, casi elegibles y academias) con historial real de scrims, juega completa la **Copa Élite** y deja la **Copa Ascenso** (7 equipos, con descansos) en la ronda 3 para probarla. Contraseña: `SEED_PASSWORD`.
+Crea equipos para cada escenario (Barón, Heraldo, casi elegibles y academias) con historial real de scrims, juega completa la **Copa Barón** y deja la **Copa Heraldo** (7 equipos, con descansos) en la ronda 3 para probarla. Contraseña: `SEED_PASSWORD`.
 
 | Escenario | Usuarios |
 | --- | --- |
-| Élite (CLD organiza) | `coach.cld`, `coach.abk`, `coach.ipx`, `coach.sfl`, `coach.cro`, `coach.ett` |
-| Ascenso en curso (JDS organiza) | `coach.jds`, `coach.str`, `coach.obw`, `coach.sva`, `coach.emg`, `coach.tdf`, `coach.grv` |
+| Barón (CLD organiza) | `coach.cld`, `coach.abk`, `coach.ipx`, `coach.sfl`, `coach.cro`, `coach.ett` |
+| Heraldo en curso (JDS organiza) | `coach.jds`, `coach.str`, `coach.obw`, `coach.sva`, `coach.emg`, `coach.tdf`, `coach.grv` |
 | Casi elegibles (rechazados) | `coach.rkt` (7 victorias), `coach.glc` (6,850 pts), `coach.lwl` (Platino III), `coach.hfr` (3 titulares) |
 
 ## Seguridad

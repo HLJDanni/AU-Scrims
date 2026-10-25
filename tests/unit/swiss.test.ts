@@ -82,7 +82,7 @@ describe("Unitarias · motor suizo y elegibilidad", () => {
     expect(table.at(-1)!.losses).toBe(3);
   });
 
-  it("S2 · elegibilidad: Élite (Maestro+), Ascenso (Platino II–Diamante), y rechazo por rating, victorias, roster o ELO", () => {
+  it("S2 · elegibilidad: Barón (Maestro+), Heraldo (Platino II–Diamante), y rechazo por rating, victorias, roster o ELO", () => {
     const five = (tier: "MASTER" | "DIAMOND" | "PLATINUM" | "GOLD", division: number | null, lp = 50) =>
       (["TOP", "JUNGLE", "MID", "ADC", "SUPPORT"] as const).map((position) => ({ position, tier, division, lp }));
 

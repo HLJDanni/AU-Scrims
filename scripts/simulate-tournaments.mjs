@@ -1,9 +1,9 @@
 // Simula los escenarios de torneos suizos con datos de prueba.
-//  1. (BD) Crea equipos demo para cada caso: División Élite, División Ascenso, casi elegibles y academias.
+//  1. (BD) Crea equipos demo para cada caso: División Barón, División Heraldo, casi elegibles y academias.
 //     Cada equipo tiene staff, 5-6 jugadores con rango y un historial real de scrims (las victorias se cuentan de ahí).
 //  2. (API) Ejecuta los torneos como lo haría el staff: crear, inscribir, intentos rechazados, iniciar y reportar.
-//     - Copa Élite: se juega completa.
-//     - Copa Ascenso: 7 equipos (hay descansos) y se deja en curso para que puedas reportar las rondas restantes.
+//     - Copa Barón: se juega completa.
+//     - Copa Heraldo: 7 equipos (hay descansos) y se deja en curso para que puedas reportar las rondas restantes.
 // Uso: node scripts/simulate-tournaments.mjs   (con el stack levantado; idempotente)
 import { PrismaClient } from "@prisma/client";
 import bcrypt from "bcryptjs";
@@ -18,14 +18,14 @@ const db = new PrismaClient();
 // ---------- Datos de los escenarios ----------
 const P = (tier, division, lp) => ({ tier, division, lp });
 const TEAMS = [
-  // División Élite: ELO promedio Maestro+, ≥7000 pts, ≥10 scrims ganados
+  // División Barón: ELO promedio Maestro+, ≥7000 pts, ≥10 scrims ganados
   { tag: "CLD", name: "Celestial Dawn", color: "#F4C874", group: "elite", target: 7850, wins: 16, ranks: [P("CHALLENGER", null, 1180), P("GRANDMASTER", null, 640), P("CHALLENGER", null, 1050), P("GRANDMASTER", null, 720), P("MASTER", null, 410)] },
   { tag: "ABK", name: "Abyss Kings", color: "#9D48E0", group: "elite", target: 7600, wins: 14, ranks: [P("GRANDMASTER", null, 560), P("MASTER", null, 380), P("CHALLENGER", null, 1010), P("MASTER", null, 290), P("GRANDMASTER", null, 530)] },
   { tag: "IPX", name: "Iron Phoenix", color: "#E84057", group: "elite", target: 7450, wins: 13, ranks: [P("MASTER", null, 320), P("GRANDMASTER", null, 600), P("MASTER", null, 270), P("MASTER", null, 410), P("MASTER", null, 150)] },
   { tag: "SFL", name: "Starfall Legion", color: "#576BCE", group: "elite", target: 7300, wins: 12, ranks: [P("MASTER", null, 210), P("MASTER", null, 180), P("GRANDMASTER", null, 515), P("MASTER", null, 90), P("MASTER", null, 260)] },
   { tag: "CRO", name: "Crimson Oath", color: "#C86B3C", group: "elite", target: 7150, wins: 11, ranks: [P("MASTER", null, 140), P("MASTER", null, 60), P("MASTER", null, 220), P("DIAMOND", 1, 80), P("MASTER", null, 310)] },
   { tag: "ETT", name: "Eternal Tide", color: "#0AC8B9", group: "elite", target: 7050, wins: 10, ranks: [P("MASTER", null, 110), P("MASTER", null, 75), P("MASTER", null, 160), P("MASTER", null, 40), P("GRANDMASTER", null, 505)] },
-  // División Ascenso: ELO promedio Platino II – Diamante I. Son 7 → habrá descansos
+  // División Heraldo: ELO promedio Platino II – Diamante I. Son 7 → habrá descansos
   { tag: "JDS", name: "Jade Serpents", color: "#2DD4A8", group: "ascenso", target: 7500, wins: 14, ranks: [P("DIAMOND", 1, 70), P("DIAMOND", 2, 40), P("DIAMOND", 1, 20), P("DIAMOND", 3, 55), P("DIAMOND", 2, 10)] },
   { tag: "STR", name: "Storm Riders", color: "#576BCE", group: "ascenso", target: 7350, wins: 13, ranks: [P("DIAMOND", 3, 60), P("DIAMOND", 4, 30), P("EMERALD", 1, 75), P("DIAMOND", 2, 20), P("DIAMOND", 4, 90)] },
   { tag: "OBW", name: "Obsidian Wolves", color: "#A09B8C", group: "ascenso", target: 7250, wins: 12, ranks: [P("EMERALD", 1, 40), P("EMERALD", 2, 65), P("DIAMOND", 4, 15), P("EMERALD", 1, 90), P("EMERALD", 3, 30)] },
@@ -115,7 +115,7 @@ async function seedScenarioData() {
         region: "LAN",
         inviteCode: code(),
         rating: finals.get(t.tag),
-        description: t.group === "academy" ? "Academia de práctica para scrims de entrenamiento." : t.note ?? `Equipo de la ${t.group === "elite" ? "División Élite" : "División Ascenso"}.`,
+        description: t.group === "academy" ? "Academia de práctica para scrims de entrenamiento." : t.note ?? `Equipo de la ${t.group === "elite" ? "División Barón" : "División Heraldo"}.`,
       },
     });
     ids.set(t.tag, team.id);
@@ -247,13 +247,13 @@ async function main() {
   }
 
   await runTournament({
-    name: "Copa Élite · Temporada 1",
+    name: "Copa Barón · Temporada 1",
     organizer: "CLD",
     members: tagsOf("elite").filter((t) => t !== "CLD"),
     rejected: ["RKT", "HFR", "JDS"], // casi elegibles y un equipo de la otra división
   });
   await runTournament({
-    name: "Copa Ascenso · Temporada 1",
+    name: "Copa Heraldo · Temporada 1",
     organizer: "JDS",
     members: tagsOf("ascenso").filter((t) => t !== "JDS"),
     rejected: ["GLC", "LWL", "CLD"],

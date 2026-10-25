@@ -53,7 +53,7 @@ afterAll(async () => {
 describe("Integración · torneo suizo", () => {
   it("I4 · crear, inscribir con reglas de acceso, iniciar, reportar resultados y terminar con todos clasificados o eliminados", async () => {
     const open = await db.tournament.findFirst({ where: { division: "ELITE", status: { in: ["REGISTRATION", "ACTIVE"] } } });
-    expect(open, "Hay un torneo Élite abierto; termínalo o cancélalo antes de correr esta prueba").toBeNull();
+    expect(open, "Hay un torneo de la División Barón abierto; termínalo o cancélalo antes de correr esta prueba").toBeNull();
 
     const [c1, c2, c3, c4, low, analyst] = await Promise.all([
       ...tags.map((t) => login(`coach.${t.toLowerCase()}`)),
