@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { OPGG_ERRORS, parseOpggUrl } from "./lol";
 
 export const roleSchema = z.enum(["COACH", "ANALYST", "CAPTAIN"], { message: "Selecciona un rol válido" });
 
@@ -33,27 +34,31 @@ const apexTiers = new Set(["MASTER", "GRANDMASTER", "CHALLENGER"]);
 
 export const playerSchema = z
   .object({
-    gameName: z
-      .string()
+    // El link de op.gg es obligatorio: de él salen el Riot ID y la región de la cuenta
+    opgg: z
+      .string({ required_error: "El link de op.gg es obligatorio" })
       .trim()
-      .min(3, "El nombre del Riot ID debe tener 3 a 16 caracteres")
-      .max(16, "El nombre del Riot ID debe tener 3 a 16 caracteres")
-      .refine((v) => !v.includes("#"), "Escribe el nombre sin el #"),
-    tagLine: z
-      .string()
-      .trim()
-      .toUpperCase()
-      .regex(/^[A-Z0-9]{2,5}$/, "El tag del Riot ID debe tener 2 a 5 letras o números"),
+      .min(1, "El link de op.gg es obligatorio")
+      .max(300)
+      .transform((v, ctx) => {
+        const r = parseOpggUrl(v);
+        if (!r.ok) {
+          ctx.addIssue({ code: "custom", message: OPGG_ERRORS[r.error] });
+          return z.NEVER;
+        }
+        return r;
+      }),
     position: z.enum(["TOP", "JUNGLE", "MID", "ADC", "SUPPORT", "SUB"], { message: "Selecciona una posición" }),
     tier: z.enum(tiers).nullable().default(null),
     division: z.coerce.number().int().min(1).max(4).nullable().default(null),
     lp: z.coerce.number().int().min(0, "LP inválidos").max(3000, "LP inválidos").default(0),
   })
-  .transform((v) => {
+  .transform(({ opgg, ...v }) => {
+    const account = { gameName: opgg.gameName, tagLine: opgg.tagLine, opggUrl: opgg.url, opggRegion: opgg.region };
     // Sin rango → sin división ni LP; Maestro+ no tiene división; el resto exige división
-    if (!v.tier) return { ...v, division: null, lp: 0 };
-    if (apexTiers.has(v.tier)) return { ...v, division: null };
-    return { ...v, division: v.division ?? 4, lp: Math.min(v.lp, 99) };
+    if (!v.tier) return { ...v, ...account, division: null, lp: 0 };
+    if (apexTiers.has(v.tier)) return { ...v, ...account, division: null };
+    return { ...v, ...account, division: v.division ?? 4, lp: Math.min(v.lp, 99) };
   });
 export const deleteTeamSchema = z.object({ confirmName: z.string().trim().min(1, "Escribe el nombre del equipo para confirmar") });
 export const joinTeamSchema = z.object({ inviteCode: z.string().trim().toUpperCase().min(6, "Código inválido").max(12) });

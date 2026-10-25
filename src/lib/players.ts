@@ -2,7 +2,7 @@ import "server-only";
 import type { Player } from "@prisma/client";
 import { db } from "./db";
 import { fail } from "./api";
-import { POSITIONS, eloAverage, opggUrl } from "./lol";
+import { POSITIONS, eloAverage } from "./lol";
 
 export const MAX_PLAYERS = 10;
 
@@ -11,7 +11,7 @@ export const canManagePlayers = (role: string) => role === "COACH" || role === "
 
 const order = (p: Pick<Player, "position">) => POSITIONS.findIndex((x) => x.id === p.position);
 
-export function playerDTO(p: Player, region: string) {
+export function playerDTO(p: Player) {
   return {
     id: p.id,
     gameName: p.gameName,
@@ -21,7 +21,7 @@ export function playerDTO(p: Player, region: string) {
     tier: p.tier,
     division: p.division,
     lp: p.lp,
-    opgg: opggUrl(region, p.gameName, p.tagLine),
+    opgg: p.opggUrl,
   };
 }
 
@@ -35,9 +35,15 @@ export async function getTeamProfile(teamId: string) {
   const { players: _, ...info } = team!;
   return {
     team: info,
-    players: players.map((p) => playerDTO(p, team!.region)),
+    players: players.map((p) => playerDTO(p)),
     eloAverage: eloAverage(players),
   };
+}
+
+/** La cuenta de op.gg debe ser del mismo servidor en el que juega el equipo. */
+export function assertSameRegion(opggRegion: string, teamRegion: string) {
+  if (opggRegion !== teamRegion)
+    fail(422, `El perfil de op.gg es del servidor ${opggRegion}, pero el equipo juega en ${teamRegion}`);
 }
 
 /** Valida cupo del roster, posición titular libre y que la cuenta no esté en otro equipo. */

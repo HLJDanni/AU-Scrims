@@ -5,6 +5,7 @@ import useSWR from "swr";
 import { POSITIONS, formatRank, tierMeta, type LolTier, type Position } from "@/lib/lol";
 import { cn } from "@/lib/client";
 import { Skeleton, TeamEmblem } from "../ui/misc";
+import { RankIcon } from "../ui/rank-icon";
 
 export type PlayerDTO = {
   id: string;
@@ -21,14 +22,14 @@ export type PlayerDTO = {
 export type TeamProfile = {
   team: { id: string; name: string; tag: string; color: string; region: string; rating: number; description: string | null };
   players: PlayerDTO[];
-  eloAverage: { label: string; color: string; count: number } | null;
+  eloAverage: { tier: LolTier; label: string; color: string; count: number } | null;
 };
 
 export function RankLabel({ tier, division, lp, className }: { tier: LolTier | null; division: number | null; lp: number; className?: string }) {
   const color = tier ? tierMeta(tier).color : "#7B7A72";
   return (
-    <span className={cn("inline-flex items-center gap-1.5 text-xs font-semibold", className)} style={{ color }}>
-      <span className="h-2 w-2 rotate-45 border" style={{ borderColor: color, background: `${color}55` }} />
+    <span className={cn("inline-flex items-center gap-1.5 whitespace-nowrap text-xs font-semibold", className)} style={{ color }}>
+      <RankIcon tier={tier} size={20} />
       {formatRank(tier, division, lp)}
       {tier && tierMeta(tier).divisions && <span className="font-normal text-stone-400">{lp} LP</span>}
     </span>
@@ -51,18 +52,21 @@ export function PositionBadge({ position }: { position: Position }) {
 
 export function EloAverageBadge({ elo }: { elo: TeamProfile["eloAverage"] }) {
   return (
-    <div className="shrink-0 whitespace-nowrap rounded-md border border-void-500 bg-void-950/60 px-3 py-2 text-right">
-      <p className="text-[10px] uppercase tracking-wider text-stone-400">ELO promedio</p>
-      {elo ? (
-        <>
-          <p className="font-display text-sm font-bold" style={{ color: elo.color }}>
-            {elo.label}
-          </p>
-          <p className="text-[10px] text-stone-400">{elo.count} jugadores con rango</p>
-        </>
-      ) : (
-        <p className="text-sm text-stone-400">Sin datos</p>
-      )}
+    <div className="flex shrink-0 items-center gap-2 whitespace-nowrap rounded-md border border-void-500 bg-void-950/60 py-2 pl-2 pr-3">
+      <RankIcon tier={elo?.tier} size={40} title={elo?.label} />
+      <div className="text-right">
+        <p className="text-[10px] uppercase tracking-wider text-stone-400">ELO promedio</p>
+        {elo ? (
+          <>
+            <p className="font-display text-sm font-bold" style={{ color: elo.color }}>
+              {elo.label}
+            </p>
+            <p className="text-[10px] text-stone-400">{elo.count} jugadores con rango</p>
+          </>
+        ) : (
+          <p className="text-sm text-stone-400">Sin datos</p>
+        )}
+      </div>
     </div>
   );
 }

@@ -76,6 +76,7 @@ async function seedPlayers() {
           teamId: t.id,
           gameName: r.names[i],
           tagLine: t.tag.slice(0, 3) + (i + 1),
+          opggUrl: `https://op.gg/lol/summoners/${t.region.toLowerCase()}/${encodeURIComponent(r.names[i])}-${t.tag.slice(0, 3) + (i + 1)}`,
           position: POS[i],
           tier,
           division: tier === "MASTER" ? null : div,

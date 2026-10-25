@@ -1,6 +1,6 @@
 import "server-only";
 import { NextResponse } from "next/server";
-import { ZodError, type ZodSchema } from "zod";
+import { ZodError, type ZodType, type ZodTypeDef } from "zod";
 import { Prisma } from "@prisma/client";
 import { getCurrentUser, type CurrentUser } from "./auth";
 
@@ -14,7 +14,7 @@ export const fail = (status: number, message: string): never => {
   throw new ApiError(status, message);
 };
 
-export async function parseBody<T>(req: Request, schema: ZodSchema<T>): Promise<T> {
+export async function parseBody<T>(req: Request, schema: ZodType<T, ZodTypeDef, unknown>): Promise<T> {
   let raw: unknown;
   try {
     raw = await req.json();

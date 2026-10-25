@@ -27,7 +27,18 @@ afterAll(async () => {
 
 describe("Integración · roster de jugadores", () => {
   it("I3 · capitán agrega/edita jugadores, analista no puede, se validan posición y cuenta duplicada, y el rival ve el perfil", async () => {
-    const mid = { gameName: "QaMidLaner", tagLine: tag, position: "MID", tier: "DIAMOND", division: 2, lp: 40 };
+    const link = (name: string, region = "las") => `https://www.op.gg/summoners/${region}/${name}-${tag}`;
+    const mid = { opgg: link("QaMidLaner"), position: "MID", tier: "DIAMOND", division: 2, lp: 40 };
+
+    // El link de op.gg es obligatorio y debe ser del servidor del equipo (SHR juega en LAS)
+    const { opgg: _, ...withoutLink } = mid;
+    const missing = await cap.post("/api/team/players", withoutLink);
+    expect(missing.status).toBe(422);
+    expect(missing.body.error).toMatch(/op.gg es obligatorio/);
+    expect((await cap.post("/api/team/players", { ...mid, opgg: `https://u.gg/lol/profile/la2/QaMidLaner-${tag}` })).status).toBe(422);
+    const wrongServer = await cap.post("/api/team/players", { ...mid, opgg: link("QaMidLaner", "lan") });
+    expect(wrongServer.status).toBe(422);
+    expect(wrongServer.body.error).toMatch(/servidor LAN/);
 
     // Analista: solo lectura
     expect((await analyst.post("/api/team/players", mid)).status).toBe(403);
@@ -37,18 +48,18 @@ describe("Integración · roster de jugadores", () => {
     const created = await cap.post("/api/team/players", mid);
     expect(created.status).toBe(200);
     expect(created.body.player).toMatchObject({ riotId: `QaMidLaner#${tag}`, position: "MID", tier: "DIAMOND", division: 2 });
-    expect(created.body.player.opgg).toBe(`https://www.op.gg/summoners/las/QaMidLaner-${tag}`);
+    expect(created.body.player.opgg).toBe(`https://op.gg/lol/summoners/las/QaMidLaner-${tag}`); // normalizado
     const row = await db.player.findUniqueOrThrow({ where: { id: created.body.player.id } });
-    expect(row.teamId).toBe(shrId);
+    expect(row).toMatchObject({ teamId: shrId, gameName: "QaMidLaner", tagLine: tag });
 
     // Segundo titular en MID → 409
-    expect((await cap.post("/api/team/players", { ...mid, gameName: "QaOtroMid" })).status).toBe(409);
+    expect((await cap.post("/api/team/players", { ...mid, opgg: link("QaOtroMid") })).status).toBe(409);
     // Misma cuenta (sin importar mayúsculas) → 409
-    const dup = await cap.post("/api/team/players", { ...mid, gameName: "qamidlaner", position: "SUB" });
+    const dup = await cap.post("/api/team/players", { ...mid, opgg: link("qamidlaner"), position: "SUB" });
     expect(dup.status).toBe(409);
     expect(dup.body.error).toMatch(/ya está registrado/);
-    // Riot ID inválido → 422
-    expect((await cap.post("/api/team/players", { ...mid, gameName: "ab", position: "SUB" })).status).toBe(422);
+    // Riot ID inválido dentro del link → 422
+    expect((await cap.post("/api/team/players", { ...mid, opgg: link("ab"), position: "SUB" })).status).toBe(422);
 
     // Editar a Maestro: la división se descarta
     const edited = await cap.patch(`/api/team/players/${created.body.player.id}`, { ...mid, tier: "MASTER", division: 3, lp: 210 });

@@ -137,6 +137,7 @@ model Player {
   team      Team     @relation(fields: [teamId], references: [id], onDelete: Cascade)
   gameName  String
   tagLine   String
+  opggUrl   String // perfil de op.gg (obligatorio al registrar)
   position  Position
   tier      LolTier?
   division  Int? // 1-4 (null para Maestro+ o sin rango)

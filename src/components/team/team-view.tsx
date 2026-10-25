@@ -12,6 +12,7 @@ import { Tabs, TabPanel } from "../ui/tabs";
 import { EmptyState, PageHeader, RoleBadge, Skeleton, StatCard, TeamEmblem } from "../ui/misc";
 import { Button } from "../ui/button";
 import { Modal } from "../ui/modal";
+import { RankIcon } from "../ui/rank-icon";
 import { PlayersTab } from "./players-tab";
 import { useShell } from "../app-shell";
 
@@ -53,7 +54,8 @@ export function TeamView() {
         <div className="flex-1">
           <PageHeader eyebrow={`${data.team.region} · Puesto #${data.stats.rank}`} title={data.team.name} />
           <p className="-mt-4 text-sm">
-            <span style={{ color: tier.color }} className="font-semibold">
+            <span style={{ color: tier.color }} className="inline-flex items-center gap-1.5 align-middle font-semibold">
+              <RankIcon tier={tier.icon} size={22} />
               {tier.name}
             </span>
             <span className="text-stone-400"> · {data.team.rating} pts · {data.members.length} miembros del staff</span>

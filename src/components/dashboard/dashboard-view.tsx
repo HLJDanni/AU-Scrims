@@ -12,6 +12,7 @@ import { cn } from "@/lib/client";
 import { useShell } from "../app-shell";
 import { EmptyState, Skeleton, StatCard, TeamEmblem } from "../ui/misc";
 import { Button } from "../ui/button";
+import { RankIcon } from "../ui/rank-icon";
 import { ScrimCard } from "../scrims/scrim-card";
 import { scrimState } from "../scrims/use-scrim-actions";
 
@@ -91,7 +92,8 @@ export function DashboardView() {
               <p className="text-[11px] font-semibold uppercase tracking-[0.3em] text-hex-200">Bienvenido, {user.username}</p>
               <h1 className="mt-1 font-display text-3xl font-bold tracking-wide text-gold-50 sm:text-4xl">{user.team.name}</h1>
               <p className="mt-2 flex flex-wrap items-center gap-3 text-sm text-stone-300">
-                <span className="font-semibold" style={{ color: tier.color }}>
+                <span className="flex items-center gap-1.5 font-semibold" style={{ color: tier.color }}>
+                  <RankIcon tier={tier.icon} size={26} />
                   {tier.name}
                 </span>
                 <span>·</span>
@@ -192,7 +194,8 @@ export function DashboardView() {
                 <TeamEmblem team={t} size={34} />
                 <div className="min-w-0 flex-1">
                   <p className="truncate text-sm font-semibold text-gold-50">{t.name}</p>
-                  <p className="text-[11px]" style={{ color: t.tierColor }}>
+                  <p className="flex items-center gap-1 text-[11px]" style={{ color: t.tierColor }}>
+                    <RankIcon tier={t.tierIcon} size={16} />
                     {t.tier}
                   </p>
                 </div>

@@ -9,6 +9,7 @@ import { cn } from "@/lib/client";
 import { Tabs, TabPanel } from "../ui/tabs";
 import { EmptyState, PageHeader, Skeleton, TeamEmblem } from "../ui/misc";
 import { Button } from "../ui/button";
+import { RankIcon } from "../ui/rank-icon";
 import { useShell } from "../app-shell";
 
 type Tab = "ranking" | "tiers" | "activity";
@@ -83,7 +84,8 @@ function Podium({ teams }: { teams: LeaderboardRow[] }) {
               <TeamEmblem team={t} size={t.rank === 1 ? 84 : 64} />
             </motion.div>
             <p className="mt-2 max-w-full truncate text-center text-sm font-semibold text-gold-50">{t.name}</p>
-            <p className="font-display text-lg font-bold" style={{ color: t.tierColor }}>
+            <p className="flex items-center gap-1 font-display text-lg font-bold" style={{ color: t.tierColor }}>
+              <RankIcon tier={t.tierIcon} size={24} title={t.tier} />
               {t.rating}
             </p>
             <div
@@ -178,7 +180,8 @@ function RankTable({ teams, activity }: { teams: LeaderboardRow[]; activity?: bo
                     </div>
                   </td>
                   <td className="px-4 py-3">
-                    <span className="text-xs font-semibold uppercase tracking-wider" style={{ color: t.tierColor }}>
+                    <span className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wider" style={{ color: t.tierColor }}>
+                      <RankIcon tier={t.tierIcon} size={26} />
                       {t.tier}
                     </span>
                   </td>
@@ -234,7 +237,8 @@ function Tiers({ teams }: { teams: LeaderboardRow[] }) {
       {groups.map((g, gi) => (
         <motion.div key={g.tier.name} initial={{ opacity: 0, y: 14 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: gi * 0.06 }} className="hex-panel p-5">
           <div className="mb-4 flex items-center justify-between">
-            <p className="font-display text-lg font-bold tracking-wider" style={{ color: g.tier.color }}>
+            <p className="flex items-center gap-2 font-display text-lg font-bold tracking-wider" style={{ color: g.tier.color }}>
+              <RankIcon tier={g.tier.icon} size={36} />
               {g.tier.name}
             </p>
             <span className="text-xs text-stone-400">{Number.isFinite(g.tier.min) ? `${g.tier.min}+ pts` : "< 1000 pts"}</span>

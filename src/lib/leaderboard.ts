@@ -1,6 +1,7 @@
 import "server-only";
 import { db } from "./db";
 import { tierFor } from "./elo";
+import type { LolTier } from "./lol";
 
 export type LeaderboardRow = {
   id: string;
@@ -12,6 +13,7 @@ export type LeaderboardRow = {
   rating: number;
   tier: string;
   tierColor: string;
+  tierIcon: LolTier;
   scrims: number;
   scrimWins: number;
   gamesWon: number;
@@ -74,6 +76,7 @@ export async function getLeaderboard(): Promise<LeaderboardRow[]> {
         rating: t.rating,
         tier: tier.name,
         tierColor: tier.color,
+        tierIcon: tier.icon,
         scrims: s.scrims,
         scrimWins: s.scrimWins,
         gamesWon: s.gamesWon,

@@ -90,7 +90,47 @@ export function parseRiotId(input: string) {
 }
 
 const OPGG_REGION: Record<string, string> = { LAN: "lan", LAS: "las", NA: "na", BR: "br", EUW: "euw", EUNE: "eune", KR: "kr", OCE: "oce" };
+const REGION_FROM_OPGG = Object.fromEntries(Object.entries(OPGG_REGION).map(([k, v]) => [v, k]));
 
+/** Link canónico de op.gg para un Riot ID. */
 export function opggUrl(region: string, gameName: string, tagLine: string) {
-  return `https://www.op.gg/summoners/${OPGG_REGION[region] ?? "lan"}/${encodeURIComponent(`${gameName}-${tagLine}`)}`;
+  return `https://op.gg/lol/summoners/${OPGG_REGION[region] ?? "lan"}/${encodeURIComponent(gameName)}-${tagLine}`;
+}
+
+export type OpggError = "url" | "host" | "path" | "region" | "riotId";
+export const OPGG_ERRORS: Record<OpggError, string> = {
+  url: "Pega el link completo del perfil de op.gg (https://op.gg/lol/summoners/…)",
+  host: "El link debe ser de op.gg",
+  path: "El link debe ser de un perfil de jugador (…/summoners/región/Nombre-TAG)",
+  region: "Región de op.gg no soportada (LAN, LAS, NA, BR, EUW, EUNE, KR, OCE)",
+  riotId: "No se pudo leer el Riot ID del link de op.gg",
+};
+
+/**
+ * Lee región y Riot ID de un link de perfil de op.gg. Acepta los formatos actuales y antiguos:
+ *   https://op.gg/lol/summoners/lan/Nombre-TAG · https://www.op.gg/summoners/lan/Nombre-TAG · https://op.gg/es/lol/summoners/…
+ */
+export function parseOpggUrl(input: string): { ok: true; region: string; gameName: string; tagLine: string; url: string } | { ok: false; error: OpggError } {
+  let url: URL;
+  try {
+    url = new URL(input.trim().match(/^https?:\/\//i) ? input.trim() : `https://${input.trim()}`);
+  } catch {
+    return { ok: false, error: "url" };
+  }
+  if (!/^(www\.)?op\.gg$/i.test(url.hostname)) return { ok: false, error: "host" };
+  const parts = url.pathname.split("/").filter(Boolean);
+  const i = parts.findIndex((p) => p.toLowerCase() === "summoners");
+  if (i === -1 || parts.length < i + 3) return { ok: false, error: "path" };
+  const region = REGION_FROM_OPGG[parts[i + 1].toLowerCase()];
+  if (!region) return { ok: false, error: "region" };
+  let slug: string;
+  try {
+    slug = decodeURIComponent(parts[i + 2].replace(/\+/g, " "));
+  } catch {
+    return { ok: false, error: "riotId" };
+  }
+  const cut = slug.lastIndexOf("-");
+  const parsed = cut > 0 ? parseRiotId(`${slug.slice(0, cut)}#${slug.slice(cut + 1)}`) : null;
+  if (!parsed) return { ok: false, error: "riotId" };
+  return { ok: true, region, ...parsed, url: opggUrl(region, parsed.gameName, parsed.tagLine) };
 }

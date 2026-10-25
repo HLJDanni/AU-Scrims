@@ -29,6 +29,7 @@ RUN addgroup -S app && adduser -S app -G app
 
 COPY --from=builder --chown=app:app /app/.next/standalone ./
 COPY --from=builder --chown=app:app /app/.next/static ./.next/static
+COPY --from=builder --chown=app:app /app/public ./public
 COPY --from=builder --chown=app:app /app/prisma ./prisma
 # Cliente Prisma generado y bcryptjs para el seed
 COPY --from=builder --chown=app:app /app/node_modules/.prisma ./node_modules/.prisma

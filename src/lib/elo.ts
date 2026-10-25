@@ -12,16 +12,16 @@ export function eloDelta(ratingA: number, ratingB: number, winsA: number, winsB:
 }
 
 export const TIERS = [
-  { min: 1800, name: "Retador", color: "#F4C874" },
-  { min: 1700, name: "Gran Maestro", color: "#E84057" },
-  { min: 1600, name: "Maestro", color: "#9D48E0" },
-  { min: 1500, name: "Diamante", color: "#576BCE" },
-  { min: 1400, name: "Esmeralda", color: "#2DD4A8" },
-  { min: 1300, name: "Platino", color: "#4E9996" },
-  { min: 1200, name: "Oro", color: "#C89B3C" },
-  { min: 1100, name: "Plata", color: "#A09B8C" },
-  { min: 1000, name: "Bronce", color: "#8C5A3C" },
-  { min: -Infinity, name: "Hierro", color: "#5B5A56" },
+  { min: 1800, name: "Retador", color: "#F4C874", icon: "CHALLENGER" },
+  { min: 1700, name: "Gran Maestro", color: "#E84057", icon: "GRANDMASTER" },
+  { min: 1600, name: "Maestro", color: "#9D48E0", icon: "MASTER" },
+  { min: 1500, name: "Diamante", color: "#576BCE", icon: "DIAMOND" },
+  { min: 1400, name: "Esmeralda", color: "#2DD4A8", icon: "EMERALD" },
+  { min: 1300, name: "Platino", color: "#4E9996", icon: "PLATINUM" },
+  { min: 1200, name: "Oro", color: "#C89B3C", icon: "GOLD" },
+  { min: 1100, name: "Plata", color: "#A09B8C", icon: "SILVER" },
+  { min: 1000, name: "Bronce", color: "#8C5A3C", icon: "BRONZE" },
+  { min: -Infinity, name: "Hierro", color: "#5B5A56", icon: "IRON" },
 ] as const;
 
 export function tierFor(rating: number) {
