@@ -55,6 +55,33 @@ Con el stack levantado: `npm test` (Vitest + Playwright). El detalle de cada pru
 - **Resultados y ranking:** al registrar el marcador se actualiza el rating Elo de ambos equipos (K=32, ponderado por juegos jugados). Divisiones de Hierro a Retador.
 - **Historial:** solo de tu equipo, con filtros (victorias, derrotas, cancelados) y récord contra cada rival.
 
+## Torneos suizos
+
+Mini torneos dentro de la app (**Torneos** en el menú), formato suizo como el Mundial: **3 victorias clasifican, 3 derrotas eliminan**; partidos Bo1 y **Bo3 cuando un equipo puede clasificar o quedar eliminado**. Con número impar, uno descansa por ronda (cuenta como victoria). Las rondas siguientes se emparejan solas por récord, sin repetir rival si hay alternativa.
+
+| División | ELO promedio de los 5 titulares |
+| --- | --- |
+| Élite | Maestro – Retador |
+| Ascenso | Platino II – Diamante I |
+
+Para jugar, además: **7,000 puntos de ranking** y **10 scrims ganados**. Quien no cumple no puede inscribirse; la pestaña *Requisitos* muestra qué le falta a cada equipo. Un coach elegible organiza el torneo de su división (uno abierto a la vez), coach o capitán inscriben al equipo y el organizador lo inicia (mínimo 4 equipos).
+
+> El rating de equipos usa Elo en escala ×5 (base 6000, K 160) para que el umbral de 7,000 sea alcanzable; se comporta igual que el Elo clásico.
+
+### Simulación con datos de prueba
+
+```bash
+npm run simulate:tournaments
+```
+
+Crea equipos para cada escenario (Élite, Ascenso, casi elegibles y academias) con historial real de scrims, juega completa la **Copa Élite** y deja la **Copa Ascenso** (7 equipos, con descansos) en la ronda 3 para probarla. Contraseña: `SEED_PASSWORD`.
+
+| Escenario | Usuarios |
+| --- | --- |
+| Élite (CLD organiza) | `coach.cld`, `coach.abk`, `coach.ipx`, `coach.sfl`, `coach.cro`, `coach.ett` |
+| Ascenso en curso (JDS organiza) | `coach.jds`, `coach.str`, `coach.obw`, `coach.sva`, `coach.emg`, `coach.tdf`, `coach.grv` |
+| Casi elegibles (rechazados) | `coach.rkt` (7 victorias), `coach.glc` (6,850 pts), `coach.lwl` (Platino III), `coach.hfr` (3 titulares) |
+
 ## Seguridad
 
 - Cookie de sesión `httpOnly`, `SameSite=Lax` (activa `COOKIE_SECURE=true` detrás de HTTPS).

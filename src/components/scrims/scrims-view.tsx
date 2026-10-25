@@ -135,19 +135,19 @@ function Requests({ list }: { list?: ScrimDTO[] }) {
   ];
 
   return (
-    <div className="grid gap-6 lg:grid-cols-[240px_1fr]">
-      <div className="flex gap-2 overflow-x-auto lg:flex-col">
+    <div className="grid gap-6 lg:grid-cols-[280px_minmax(0,1fr)]">
+      <div className="flex min-w-0 gap-2 overflow-x-auto pb-1 lg:flex-col lg:overflow-visible lg:pb-0">
         {sections.map((s) => (
           <button
             key={s.id}
             onClick={() => setSection(s.id)}
             className={cn(
-              "flex min-w-max items-center gap-3 rounded-md border px-4 py-3 text-left transition-[border-color,background-color,box-shadow,color] duration-100",
+              "flex min-w-max items-center gap-3 lg:w-full lg:min-w-0 rounded-md border px-4 py-3 text-left transition-[border-color,background-color,box-shadow,color] duration-100",
               section === s.id ? "border-gold-300/70 bg-gold-700/25 text-gold-50 shadow-gold" : "border-void-500/70 text-stone-300 hover:border-gold-500",
             )}
           >
             <span className={section === s.id ? "text-gold-200" : ""}>{s.icon}</span>
-            <span className="flex-1">
+            <span className="min-w-0 flex-1">
               <span className="block text-sm font-semibold">{s.label}</span>
               <span className="hidden text-[11px] text-stone-400 lg:block">{s.hint}</span>
             </span>

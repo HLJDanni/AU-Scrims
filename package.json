@@ -14,7 +14,8 @@
     "test:unit": "vitest run tests/unit tests/whitebox",
     "test:blackbox": "vitest run tests/blackbox",
     "test:integration": "vitest run tests/integration",
-    "test:e2e": "playwright test"
+    "test:e2e": "playwright test",
+    "simulate:tournaments": "node scripts/simulate-tournaments.mjs"
   },
   "prisma": {
     "seed": "node prisma/seed.mjs"

@@ -133,3 +133,12 @@ export const resultSchema = z.object({
   myScore: z.coerce.number().int().min(0).max(10),
   opponentScore: z.coerce.number().int().min(0).max(10),
 });
+
+export const createTournamentSchema = z.object({
+  name: z.string().trim().min(3, "El nombre necesita al menos 3 caracteres").max(60, "Máximo 60 caracteres"),
+});
+
+export const matchResultSchema = z.object({
+  scoreA: z.coerce.number().int().min(0).max(2),
+  scoreB: z.coerce.number().int().min(0).max(2),
+});

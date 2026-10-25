@@ -36,6 +36,23 @@ enum LolTier {
   CHALLENGER
 }
 
+enum TournamentDivision {
+  ELITE // ELO promedio Maestro – Retador
+  ASCENSO // ELO promedio Platino II – Diamante I
+}
+
+enum TournamentStatus {
+  REGISTRATION
+  ACTIVE
+  FINISHED
+}
+
+enum EntryStatus {
+  ALIVE
+  QUALIFIED // llegó a 3 victorias
+  ELIMINATED // llegó a 3 derrotas
+}
+
 enum ScrimStatus {
   PENDING // enviada, esperando respuesta del rival
   CONFIRMED // aceptada por ambos equipos
@@ -62,53 +79,57 @@ model User {
 }
 
 model Team {
-  id         String   @id @default(cuid())
-  name       String   @unique
-  tag        String   @unique
-  region     String   @default("LAN")
-  color      String   @default("#C8AA6E")
-  inviteCode String   @unique
-  rating     Int      @default(1200)
+  id          String   @id @default(cuid())
+  name        String   @unique
+  tag         String   @unique
+  region      String   @default("LAN")
+  color       String   @default("#C8AA6E")
+  inviteCode  String   @unique
+  rating      Int      @default(6000)
   description String?
-  createdAt  DateTime @default(now())
+  createdAt   DateTime @default(now())
 
-  members        User[]
-  players        Player[]
-  scrimsHome     Scrim[] @relation("RequesterTeam")
-  scrimsAway     Scrim[] @relation("OpponentTeam")
-  proposalsMade  Scrim[] @relation("ProposalTeam")
+  members              User[]
+  players              Player[]
+  tournamentsOrganized Tournament[]      @relation("TournamentOrganizer")
+  tournamentEntries    TournamentEntry[]
+  matchesAsA           TournamentMatch[] @relation("MatchTeamA")
+  matchesAsB           TournamentMatch[] @relation("MatchTeamB")
+  scrimsHome           Scrim[]           @relation("RequesterTeam")
+  scrimsAway           Scrim[]           @relation("OpponentTeam")
+  proposalsMade        Scrim[]           @relation("ProposalTeam")
 }
 
 model Scrim {
-  id               String      @id @default(cuid())
-  requesterTeamId  String
-  requesterTeam    Team        @relation("RequesterTeam", fields: [requesterTeamId], references: [id], onDelete: Cascade)
-  opponentTeamId   String
-  opponentTeam     Team        @relation("OpponentTeam", fields: [opponentTeamId], references: [id], onDelete: Cascade)
-  createdById      String?
-  createdBy        User?       @relation("ScrimCreatedBy", fields: [createdById], references: [id], onDelete: SetNull)
+  id              String  @id @default(cuid())
+  requesterTeamId String
+  requesterTeam   Team    @relation("RequesterTeam", fields: [requesterTeamId], references: [id], onDelete: Cascade)
+  opponentTeamId  String
+  opponentTeam    Team    @relation("OpponentTeam", fields: [opponentTeamId], references: [id], onDelete: Cascade)
+  createdById     String?
+  createdBy       User?   @relation("ScrimCreatedBy", fields: [createdById], references: [id], onDelete: SetNull)
 
-  startAt          DateTime
-  endAt            DateTime
-  games            Int         @default(3)
-  status           ScrimStatus @default(PENDING)
-  roomLink         String?
-  notes            String?
+  startAt  DateTime
+  endAt    DateTime
+  games    Int         @default(3)
+  status   ScrimStatus @default(PENDING)
+  roomLink String?
+  notes    String?
 
   // Propuesta de re-agenda pendiente de aprobación del otro equipo
   proposedStartAt  DateTime?
   proposedEndAt    DateTime?
   proposedGames    Int?
   proposedByTeamId String?
-  proposedByTeam   Team?       @relation("ProposalTeam", fields: [proposedByTeamId], references: [id], onDelete: SetNull)
+  proposedByTeam   Team?     @relation("ProposalTeam", fields: [proposedByTeamId], references: [id], onDelete: SetNull)
 
   // Resultado (juegos ganados por cada equipo)
-  requesterScore   Int?
-  opponentScore    Int?
-  ratingDelta      Int?
+  requesterScore Int?
+  opponentScore  Int?
+  ratingDelta    Int?
 
-  createdAt        DateTime    @default(now())
-  updatedAt        DateTime    @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   events ScrimEvent[]
 
@@ -132,25 +153,81 @@ model ScrimEvent {
 
 // Jugadores de LoL del equipo (no son usuarios de la plataforma). Se guarda su cuenta principal.
 model Player {
-  id        String   @id @default(cuid())
-  teamId    String
-  team      Team     @relation(fields: [teamId], references: [id], onDelete: Cascade)
-  gameName  String
-  tagLine   String
-  opggUrl   String // perfil de op.gg (obligatorio al registrar)
-  position  Position
-  tier      LolTier?
-  division  Int? // 1-4 (null para Maestro+ o sin rango)
-  lp        Int      @default(0)
+  id            String    @id @default(cuid())
+  teamId        String
+  team          Team      @relation(fields: [teamId], references: [id], onDelete: Cascade)
+  gameName      String
+  tagLine       String
+  opggUrl       String // perfil de op.gg (obligatorio al registrar)
+  position      Position
+  tier          LolTier?
+  division      Int? // 1-4 (null para Maestro+ o sin rango)
+  lp            Int       @default(0)
   // Datos sincronizados desde la API oficial de Riot (la misma fuente que usa op.gg)
   puuid         String?   @unique
   summonerLevel Int?
   wins          Int?
   losses        Int?
   rankUpdatedAt DateTime?
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
 
   @@unique([gameName, tagLine])
   @@index([teamId])
+}
+
+// Torneo de formato suizo: 3 victorias clasifican, 3 derrotas eliminan.
+model Tournament {
+  id              String             @id @default(cuid())
+  name            String
+  division        TournamentDivision
+  status          TournamentStatus   @default(REGISTRATION)
+  organizerTeamId String
+  organizerTeam   Team               @relation("TournamentOrganizer", fields: [organizerTeamId], references: [id], onDelete: Cascade)
+  round           Int                @default(0)
+  createdAt       DateTime           @default(now())
+  startedAt       DateTime?
+  finishedAt      DateTime?
+
+  entries TournamentEntry[]
+  matches TournamentMatch[]
+
+  @@index([division, status])
+}
+
+model TournamentEntry {
+  id           String      @id @default(cuid())
+  tournamentId String
+  tournament   Tournament  @relation(fields: [tournamentId], references: [id], onDelete: Cascade)
+  teamId       String
+  team         Team        @relation(fields: [teamId], references: [id], onDelete: Cascade)
+  seed         Int?
+  wins         Int         @default(0)
+  losses       Int         @default(0)
+  status       EntryStatus @default(ALIVE)
+  // Foto de la elegibilidad al inscribirse
+  ratingAtJoin Int
+  eloAtJoin    String
+  createdAt    DateTime    @default(now())
+
+  @@unique([tournamentId, teamId])
+}
+
+model TournamentMatch {
+  id           String     @id @default(cuid())
+  tournamentId String
+  tournament   Tournament @relation(fields: [tournamentId], references: [id], onDelete: Cascade)
+  round        Int
+  teamAId      String
+  teamA        Team       @relation("MatchTeamA", fields: [teamAId], references: [id], onDelete: Cascade)
+  teamBId      String? // null = descanso (bye), cuenta como victoria
+  teamB        Team?      @relation("MatchTeamB", fields: [teamBId], references: [id], onDelete: Cascade)
+  bestOf       Int        @default(1)
+  scoreA       Int?
+  scoreB       Int?
+  winnerId     String?
+  reportedAt   DateTime?
+  createdAt    DateTime   @default(now())
+
+  @@index([tournamentId, round])
 }

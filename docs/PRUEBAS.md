@@ -1,6 +1,6 @@
 # Plan y resultados de pruebas · AU Scrims
 
-**Fecha de ejecución:** 24/10/2026 · **Entorno:** Docker local (app `:3000`, PostgreSQL `:5434`), datos demo · **Resultado global:** 19/19 pruebas automatizadas aprobadas
+**Fecha de ejecución:** 24/10/2026 · **Entorno:** Docker local (app `:3000`, PostgreSQL `:5434`), datos demo · **Resultado global:** 22/22 pruebas automatizadas aprobadas
 
 ## Cómo ejecutarlas
 
@@ -28,6 +28,8 @@ Las pruebas de caja negra, integración y E2E usan los usuarios demo y limpian l
 | Unitaria | U6 | `tests/unit/lol.test.ts` | Rangos de SoloQ: escala numérica e inversa, ELO promedio de titulares (ignora suplentes y sin rango), Riot ID y link de op.gg | ✅ |
 | Unitaria | U7 | `tests/unit/lol.test.ts` | Link de op.gg: acepta formatos actual, antiguo y con idioma; extrae región y Riot ID; normaliza; rechaza u.gg, rutas que no son perfiles, regiones desconocidas y links sin tag | ✅ |
 | Unitaria | U8 | `tests/unit/riot.test.ts` | Cliente de la API de Riot con respuestas simuladas: rango de SoloQ (ignora Flex), Maestro sin división, sin rango, enrutamiento LAN → `americas`/`la1`, clave en cabecera y errores 404/403/429 y sin clave | ✅ |
+| Unitaria | S1 | `tests/unit/swiss.test.ts` | Motor suizo: ronda 1 por siembra, Bo3 en partidos decisivos, descanso con impares (una vez por equipo), torneos de 4 a 16 equipos terminan en ≤5 partidos por equipo y nunca hay revancha si existía alternativa | ✅ |
+| Unitaria | S2 | `tests/unit/swiss.test.ts` | Elegibilidad: Élite (Maestro+), Ascenso (Platino II–Diamante I, límites incluidos), rechazo por rating, victorias, roster o ELO; suplentes fuera del promedio | ✅ |
 | Caja blanca | W1 | `tests/whitebox/scrim-dto.test.ts` | `toDTO`: ramas anfitrión/invitado (marcador y delta invertidos), valores nulos | ✅ |
 | Caja blanca | W2 | `tests/whitebox/scrim-dto.test.ts` | `toDTO`: ramas de propuesta (ninguna, incompleta, propia, del rival, juegos por defecto) | ✅ |
 | Caja negra | N1 | `tests/blackbox/api.test.ts` | Login: 401 con mensaje genérico, cookie `httpOnly` + `SameSite=Lax`, `/me` sin hash | ✅ |
@@ -38,6 +40,7 @@ Las pruebas de caja negra, integración y E2E usan los usuarios demo y limpian l
 | Integración | I1 | `tests/integration/scrim-lifecycle.test.ts` | Agendar → aceptar → proponer → aprobar → link → jugar → resultado: estado en BD, Elo de ambos equipos, bitácora y ranking | ✅ |
 | Integración | I2 | `tests/integration/delete-team.test.ts` | Eliminar equipo: capitán 403, nombre incorrecto 422, coach 200; se borran equipo y scrims, el staff queda sin equipo y va a `/onboarding` | ✅ |
 | Integración | I3 | `tests/integration/players.test.ts` | Roster: link de op.gg obligatorio (sin link 422, otro sitio 422, otro servidor 422, se guarda normalizado), el rango enviado por el cliente se ignora y sin clave queda sin sincronizar, sincronizar sin clave 503, capitán agrega y edita, analista 403, titular duplicado 409, cuenta repetida 409, Riot ID inválido 422, Maestro sin división, el rival ve el perfil | ✅ |
+| Integración | I4 | `tests/integration/tournament.test.ts` | Torneo completo vía API: solo coach organiza, uno abierto por división, inscripción por rol y requisitos (9 victorias → 403), mínimo 4 equipos, solo el organizador inicia, siembra 1v3/2v4, validación de marcador Bo1/Bo3, permisos de reporte, doble reporte, fin con todos clasificados o eliminados y coherencia en BD | ✅ |
 | End-to-end | E1 | `tests/e2e/schedule-flow.spec.ts` | Crea su propio equipo, rival y coach temporales (y los borra al terminar). En el navegador: login → agendar con 5 juegos y link → Enviadas → detalle → Sala → copiar invitación → Actividad → cancelar | ✅ |
 
 ### Endpoints validados (17)
@@ -50,6 +53,7 @@ Además de las pruebas automatizadas, se hizo una verificación manual de los en
 | `POST /api/auth/login` · `GET /api/auth/me` · `POST /api/auth/logout` | N1; tras logout la API responde 401 | ✅ |
 | `GET/POST/PATCH /api/team` | capitán edita 403 · coach edita 200 · sin equipo 403 | ✅ |
 | `GET/POST /api/team/players` · `PATCH/DELETE /api/team/players/:id` · `GET /api/teams/:id/profile` | I3 | ✅ |
+| `GET/POST /api/tournaments` · `GET /api/tournaments/eligibility` · `GET/DELETE /api/tournaments/:id` · `POST …/join` · `POST …/leave` · `POST …/start` · `POST …/matches/:id` | I4 y simulación (`npm run simulate:tournaments`) | ✅ |
 | `DELETE /api/team` | I2: solo coach, confirmación por nombre, borrado en cascada de scrims | ✅ |
 | `POST /api/team/join` · `POST /api/team/invite` | N2; coach regenera 200 | ✅ |
 | `DELETE /api/team/members/:id` | capitán quita al coach 403 · coach quita al capitán 200 → este va a `/onboarding` | ✅ |
@@ -91,6 +95,10 @@ Además de las pruebas automatizadas, se hizo una verificación manual de los en
 | CA-16 | Donde se muestra el ELO aparece el emblema oficial de la liga | Revisado en el navegador: roster, ELO promedio, detalle del scrim, ranking (tabla, podio y divisiones), Inicio y Mi equipo. Emblemas en `public/ranks/` | ✅ Cumple (verificación manual) |
 | CA-17 | El link de op.gg es obligatorio para registrar a un jugador | I3 (sin link 422, link de otro sitio 422, servidor distinto al del equipo 422), U7 (lectura del link); en la UI el botón Agregar queda deshabilitado sin un link válido | ✅ Cumple |
 | CA-18 | El rango, la división y los LP no se escriben a mano: se obtienen automáticamente | U8 (lectura desde la API oficial de Riot), I3 (la API ignora rangos enviados por el cliente); el formulario ya no tiene campos de rango. Probado con respuestas simuladas: falta probar con una clave real de Riot | ⚠️ Cumple en código, pendiente de clave real |
+| CA-19 | Torneo con bracket suizo dentro de la app | S1, I4; simulación con 6 y 7 equipos (con descansos); bracket agrupado por récord y tabla con Buchholz revisados en el navegador | ✅ Cumple |
+| CA-20 | División Élite (Maestro – Retador) y División Ascenso (Platino II – Diamante I); cada equipo solo accede a la suya | S2, I4; simulación: CLD rechazado en Ascenso y JDS en Élite | ✅ Cumple |
+| CA-21 | Para participar se necesitan 7,000 puntos de ranking y 10 scrims ganados | S2, I4 (9 victorias → 403); simulación: GLC (6,852 pts) y RKT (7 victorias) rechazados. El rating se re-escaló ×5 (base 6000) para que el umbral sea alcanzable | ✅ Cumple |
+| CA-22 | Los equipos que no cumplen ningún parámetro no pueden jugar | S2; pestaña Requisitos muestra a cada equipo qué le falta; LWL (Platino III) y HFR (roster incompleto) rechazados en la simulación | ✅ Cumple |
 
 ## Hallazgos corregidos durante las pruebas
 

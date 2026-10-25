@@ -241,7 +241,7 @@ function Tiers({ teams }: { teams: LeaderboardRow[] }) {
               <RankIcon tier={g.tier.icon} size={36} />
               {g.tier.name}
             </p>
-            <span className="text-xs text-stone-400">{Number.isFinite(g.tier.min) ? `${g.tier.min}+ pts` : "< 1000 pts"}</span>
+            <span className="text-xs text-stone-400">{Number.isFinite(g.tier.min) ? `${g.tier.min}+ pts` : "< 5000 pts"}</span>
           </div>
           <div className="space-y-2">
             {g.teams.map((t) => (

@@ -2,7 +2,7 @@
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { AnimatePresence, motion } from "framer-motion";
-import { CalendarDays, LayoutDashboard, LogOut, Menu, Plus, Swords, Trophy, Users, X } from "lucide-react";
+import { CalendarDays, Crown, LayoutDashboard, LogOut, Menu, Plus, Swords, Trophy, Users, X } from "lucide-react";
 import { createContext, useContext, useState } from "react";
 import { SWRConfig } from "swr";
 import useSWR from "swr";
@@ -39,6 +39,7 @@ const NAV = [
   { href: "/calendar", label: "Calendario", icon: CalendarDays },
   { href: "/scrims", label: "Scrims", icon: Swords, badge: true },
   { href: "/leaderboard", label: "Ranking", icon: Trophy },
+  { href: "/tournaments", label: "Torneos", icon: Crown },
   { href: "/team", label: "Mi equipo", icon: Users },
 ];
 

@@ -29,9 +29,9 @@ function code() {
 
 function elo(ra, rb, wa, wb) {
   const played = wa + wb;
-  const expected = 1 / (1 + 10 ** ((rb - ra) / 400));
+  const expected = 1 / (1 + 10 ** ((rb - ra) / 2000));
   const weight = Math.min(1.5, 0.75 + played * 0.15);
-  return Math.round(32 * weight * (wa / played - expected));
+  return Math.round(160 * weight * (wa / played - expected));
 }
 
 function at(dayOffset, hour, minutes = 0) {
@@ -116,7 +116,7 @@ async function main() {
   }
   const users = await db.user.findMany();
   const coachOf = (teamId) => users.find((u) => u.teamId === teamId && u.role === "COACH");
-  const ratings = Object.fromEntries(teams.map((t) => [t.id, 1200]));
+  const ratings = Object.fromEntries(teams.map((t) => [t.id, 6000]));
 
   // Historial: ~30 scrims jugados en las últimas 5 semanas
   const strength = { AU: 0.62, HXW: 0.7, NXV: 0.55, VOID: 0.45, FRF: 0.5, ION: 0.6, DMC: 0.4, SHR: 0.35 };

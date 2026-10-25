@@ -18,7 +18,7 @@ test.beforeAll(async () => {
   const [home] = await Promise.all([
     db.team.create({ data: { ...fixture.team, inviteCode: `EH${id}XX` } }),
     // Rating alto para que aparezca primero en la lista de rivales
-    db.team.create({ data: { ...fixture.rival, inviteCode: `ER${id}XX`, rating: 4999 } }),
+    db.team.create({ data: { ...fixture.rival, inviteCode: `ER${id}XX`, rating: 9999 } }),
   ]);
   await db.user.create({
     data: {

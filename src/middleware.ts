@@ -1,7 +1,7 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { SESSION_COOKIE, verifySession } from "@/lib/jwt";
 
-const APP_PAGES = ["/dashboard", "/calendar", "/scrims", "/leaderboard", "/team", "/onboarding"];
+const APP_PAGES = ["/dashboard", "/calendar", "/scrims", "/leaderboard", "/tournaments", "/team", "/onboarding"];
 const AUTH_PAGES = ["/login", "/register"];
 const MUTATING = new Set(["POST", "PUT", "PATCH", "DELETE"]);
 
