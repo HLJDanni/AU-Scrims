@@ -97,8 +97,13 @@ export function Landing({ loggedIn }: { loggedIn: boolean }) {
           </motion.div>
         ))}
       </section>
-      <footer className="relative z-10 border-t border-void-500/60 py-6 text-center text-xs text-stone-400">
-        AU Scrims · Proyecto no afiliado a Riot Games
+      <footer className="relative z-10 border-t border-void-500/60 px-6 py-6 text-center text-xs text-stone-400">
+        {/* Aviso legal requerido por las políticas de desarrolladores de Riot Games */}
+        <p className="mx-auto max-w-3xl">
+          AU Scrims isn&apos;t endorsed by Riot Games and doesn&apos;t reflect the views or opinions of Riot Games or anyone officially involved in
+          producing or managing Riot Games properties. Riot Games, and all associated properties are trademarks or registered trademarks of Riot
+          Games, Inc.
+        </p>
       </footer>
     </div>
   );
