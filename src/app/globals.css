@@ -1,0 +1,209 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  color-scheme: dark;
+  --gold: #c8aa6e;
+  --gold-l: #c89b3c;
+  --bone: #f0e6d2;
+  --hex: #0ac8b9;
+  --void: #010a13;
+  --panel: #0a0e13;
+  --line: #3c3c41;
+}
+
+html,
+body {
+  background: var(--void);
+  color: #e3dcc9;
+}
+
+body {
+  min-height: 100dvh;
+  background-image:
+    radial-gradient(1200px 600px at 85% -10%, rgba(200, 155, 60, 0.09), transparent 60%),
+    radial-gradient(900px 500px at -10% 110%, rgba(10, 200, 185, 0.07), transparent 60%);
+  background-attachment: fixed;
+}
+
+::selection {
+  background: rgba(200, 170, 110, 0.35);
+  color: #fff;
+}
+
+::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+::-webkit-scrollbar-track {
+  background: #0a0e13;
+}
+::-webkit-scrollbar-thumb {
+  background: #3c3c41;
+  border: 2px solid #0a0e13;
+  border-radius: 8px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #785a28;
+}
+
+@layer components {
+  /* Panel estilo cliente LoL: borde dorado fino con esquinas marcadas */
+  .hex-panel {
+    @apply relative rounded-md border border-gold-500/40 bg-void-900/80 backdrop-blur-sm;
+    box-shadow: inset 0 1px 0 rgba(240, 230, 210, 0.04), 0 10px 40px -20px rgba(0, 0, 0, 0.8);
+  }
+  .hex-panel::before,
+  .hex-panel::after {
+    content: "";
+    position: absolute;
+    width: 14px;
+    height: 14px;
+    pointer-events: none;
+    border-color: #c8aa6e;
+    opacity: 0.8;
+  }
+  .hex-panel::before {
+    top: -1px;
+    left: -1px;
+    border-top: 2px solid;
+    border-left: 2px solid;
+    border-top-left-radius: 6px;
+  }
+  .hex-panel::after {
+    bottom: -1px;
+    right: -1px;
+    border-bottom: 2px solid;
+    border-right: 2px solid;
+    border-bottom-right-radius: 6px;
+  }
+
+  .gold-text {
+    @apply bg-gold-gradient bg-clip-text text-transparent;
+  }
+
+  .field {
+    @apply w-full rounded-md border border-void-500 bg-void-950/70 px-3.5 py-2.5 text-sm text-gold-50 placeholder:text-stone-400
+      outline-none transition-all duration-200 focus:border-gold-200 focus:bg-void-900 focus:ring-2 focus:ring-gold-200/20;
+  }
+  .label {
+    @apply mb-1.5 block text-[11px] font-semibold uppercase tracking-[0.14em] text-stone-300;
+  }
+  .divider-gold {
+    @apply h-px w-full bg-gold-line opacity-60;
+  }
+}
+
+/* ---------- FullCalendar con tema LoL ---------- */
+.fc {
+  --fc-border-color: rgba(60, 60, 65, 0.6);
+  --fc-page-bg-color: transparent;
+  --fc-neutral-bg-color: rgba(30, 35, 40, 0.6);
+  --fc-today-bg-color: rgba(200, 155, 60, 0.07);
+  --fc-now-indicator-color: #0ac8b9;
+  --fc-highlight-color: rgba(10, 200, 185, 0.16);
+  --fc-event-border-color: transparent;
+  --fc-small-font-size: 0.75rem;
+  font-size: 0.85rem;
+}
+.fc .fc-toolbar {
+  display: none; /* usamos nuestra propia barra */
+}
+.fc .fc-col-header-cell {
+  background: rgba(10, 14, 19, 0.9);
+  padding: 10px 0;
+}
+.fc .fc-col-header-cell-cushion {
+  color: #c8aa6e;
+  font-family: var(--font-display);
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  font-size: 0.72rem;
+  text-decoration: none;
+}
+.fc .fc-day-today .fc-col-header-cell-cushion {
+  color: #f0e6d2;
+}
+.fc .fc-timegrid-slot {
+  height: 2.6rem;
+}
+.fc .fc-timegrid-slot-label-cushion,
+.fc .fc-daygrid-day-number {
+  color: #a09b8c;
+  font-size: 0.72rem;
+  text-decoration: none;
+}
+.fc .fc-day-today .fc-daygrid-day-number {
+  color: #010a13;
+  background: #c89b3c;
+  border-radius: 999px;
+  min-width: 24px;
+  text-align: center;
+  margin: 4px;
+  font-weight: 700;
+}
+.fc .fc-timegrid-now-indicator-line {
+  border-width: 2px 0 0;
+  box-shadow: 0 0 10px #0ac8b9;
+}
+.fc .fc-event {
+  border-radius: 6px;
+  cursor: pointer;
+  transition:
+    transform 0.15s ease,
+    box-shadow 0.2s ease,
+    filter 0.2s ease;
+  overflow: hidden;
+}
+.fc .fc-event:hover {
+  filter: brightness(1.15);
+  box-shadow: 0 6px 24px -8px rgba(200, 155, 60, 0.6);
+  z-index: 5;
+}
+.fc .fc-event.fc-event-dragging,
+.fc .fc-event.fc-event-resizing {
+  box-shadow: 0 0 0 2px #0ac8b9, 0 10px 30px -6px rgba(10, 200, 185, 0.6);
+}
+.fc .fc-event-mirror {
+  opacity: 0.85;
+}
+.fc .fc-highlight {
+  border: 1px dashed rgba(10, 200, 185, 0.7);
+  border-radius: 6px;
+}
+.fc .fc-scrollgrid {
+  border-radius: 8px;
+  overflow: hidden;
+}
+.fc .fc-list {
+  border-radius: 8px;
+}
+.fc .fc-list-day-cushion {
+  background: rgba(10, 14, 19, 0.95);
+  color: #c8aa6e;
+}
+.fc .fc-list-event:hover td {
+  background: rgba(200, 155, 60, 0.08);
+}
+.fc .fc-daygrid-more-link {
+  color: #0ac8b9;
+}
+.fc .fc-popover {
+  background: #0a0e13;
+  border-color: #785a28;
+}
+.fc .fc-popover-header {
+  background: #1e2328;
+  color: #c8aa6e;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+  }
+}

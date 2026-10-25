@@ -1,0 +1,37 @@
+services:
+  db:
+    image: postgres:16-alpine
+    container_name: auscrims_db
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-auscrims}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-auscrims_dev_pw}
+      POSTGRES_DB: ${POSTGRES_DB:-auscrims}
+    ports:
+      - "${DB_PORT:-5434}:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-auscrims} -d ${POSTGRES_DB:-auscrims}"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  app:
+    build: .
+    container_name: auscrims_app
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      DATABASE_URL: postgresql://${POSTGRES_USER:-auscrims}:${POSTGRES_PASSWORD:-auscrims_dev_pw}@db:5432/${POSTGRES_DB:-auscrims}?schema=public
+      JWT_SECRET: ${JWT_SECRET:-change-me-in-production-please-32chars}
+      SEED_DEMO: ${SEED_DEMO:-true}
+      SEED_PASSWORD: ${SEED_PASSWORD:-Scrims2026!}
+      COOKIE_SECURE: ${COOKIE_SECURE:-false}
+    ports:
+      - "${APP_PORT:-3000}:3000"
+
+volumes:
+  pgdata:

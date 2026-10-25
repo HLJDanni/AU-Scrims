@@ -1,0 +1,107 @@
+generator client {
+  provider      = "prisma-client-js"
+  binaryTargets = ["native", "linux-musl-openssl-3.0.x"]
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  COACH
+  ANALYST
+  CAPTAIN
+}
+
+enum ScrimStatus {
+  PENDING // enviada, esperando respuesta del rival
+  CONFIRMED // aceptada por ambos equipos
+  DECLINED // rechazada por el rival
+  CANCELLED // cancelada por alguno de los equipos
+  COMPLETED // jugada y con resultado registrado
+}
+
+model User {
+  id           String   @id @default(cuid())
+  email        String   @unique
+  username     String   @unique
+  passwordHash String
+  role         Role
+  teamId       String?
+  team         Team?    @relation(fields: [teamId], references: [id], onDelete: SetNull)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  scrimsCreated Scrim[]      @relation("ScrimCreatedBy")
+  events        ScrimEvent[]
+
+  @@index([teamId])
+}
+
+model Team {
+  id         String   @id @default(cuid())
+  name       String   @unique
+  tag        String   @unique
+  region     String   @default("LAN")
+  color      String   @default("#C8AA6E")
+  inviteCode String   @unique
+  rating     Int      @default(1200)
+  createdAt  DateTime @default(now())
+
+  members        User[]
+  scrimsHome     Scrim[] @relation("RequesterTeam")
+  scrimsAway     Scrim[] @relation("OpponentTeam")
+  proposalsMade  Scrim[] @relation("ProposalTeam")
+}
+
+model Scrim {
+  id               String      @id @default(cuid())
+  requesterTeamId  String
+  requesterTeam    Team        @relation("RequesterTeam", fields: [requesterTeamId], references: [id], onDelete: Cascade)
+  opponentTeamId   String
+  opponentTeam     Team        @relation("OpponentTeam", fields: [opponentTeamId], references: [id], onDelete: Cascade)
+  createdById      String?
+  createdBy        User?       @relation("ScrimCreatedBy", fields: [createdById], references: [id], onDelete: SetNull)
+
+  startAt          DateTime
+  endAt            DateTime
+  games            Int         @default(3)
+  status           ScrimStatus @default(PENDING)
+  roomLink         String?
+  notes            String?
+
+  // Propuesta de re-agenda pendiente de aprobación del otro equipo
+  proposedStartAt  DateTime?
+  proposedEndAt    DateTime?
+  proposedGames    Int?
+  proposedByTeamId String?
+  proposedByTeam   Team?       @relation("ProposalTeam", fields: [proposedByTeamId], references: [id], onDelete: SetNull)
+
+  // Resultado (juegos ganados por cada equipo)
+  requesterScore   Int?
+  opponentScore    Int?
+  ratingDelta      Int?
+
+  createdAt        DateTime    @default(now())
+  updatedAt        DateTime    @updatedAt
+
+  events ScrimEvent[]
+
+  @@index([requesterTeamId, startAt])
+  @@index([opponentTeamId, startAt])
+  @@index([status])
+}
+
+model ScrimEvent {
+  id        String   @id @default(cuid())
+  scrimId   String
+  scrim     Scrim    @relation(fields: [scrimId], references: [id], onDelete: Cascade)
+  actorId   String?
+  actor     User?    @relation(fields: [actorId], references: [id], onDelete: SetNull)
+  type      String
+  message   String
+  createdAt DateTime @default(now())
+
+  @@index([scrimId, createdAt])
+}
