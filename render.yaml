@@ -1,0 +1,24 @@
+# Blueprint de Render para AU Scrims (ver docs/DEPLOY.md).
+# La base de datos vive en Neon: DATABASE_URL y DIRECT_URL se pegan a mano en el panel de Render.
+services:
+  - type: web
+    name: au-scrims
+    runtime: docker
+    plan: free
+    region: virginia # misma zona que Neon "AWS US East 1 (N. Virginia)"
+    branch: main
+    autoDeploy: true
+    healthCheckPath: /api/health
+    envVars:
+      - key: DATABASE_URL # cadena de Neon CON pooler (-pooler en el host)
+        sync: false
+      - key: DIRECT_URL # cadena de Neon SIN pooler, solo para migraciones
+        sync: false
+      - key: JWT_SECRET # Render genera un secreto aleatorio largo
+        generateValue: true
+      - key: COOKIE_SECURE # Render sirve todo por HTTPS
+        value: "true"
+      - key: SEED_DEMO # en producción no se cargan datos de ejemplo
+        value: "false"
+      - key: RIOT_API_KEY
+        sync: false

@@ -41,5 +41,5 @@ RUN chmod +x ./docker-entrypoint.sh
 USER app
 EXPOSE 3000
 HEALTHCHECK --interval=15s --timeout=5s --start-period=30s --retries=5 \
-  CMD wget -qO- http://127.0.0.1:3000/api/health || exit 1
+  CMD wget -qO- "http://127.0.0.1:${PORT:-3000}/api/health" || exit 1
 ENTRYPOINT ["/sbin/tini", "--", "./docker-entrypoint.sh"]

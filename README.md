@@ -42,6 +42,10 @@ npm run dev
 
 Con el stack levantado: `npm test` (Vitest + Playwright). El detalle de cada prueba y la validación de los criterios de aceptación están en [docs/PRUEBAS.md](docs/PRUEBAS.md).
 
+## Publicar en internet
+
+Guía paso a paso para Render (app) + Neon (PostgreSQL), con ventajas y riesgos: [docs/DEPLOY.md](docs/DEPLOY.md). El blueprint está en [render.yaml](render.yaml).
+
 ## Funcionalidades
 
 - **Roles:** Coach (además administra el roster, el código de invitación, los ajustes y puede **eliminar el equipo**), Analista y Capitán. Todos pueden agendar, responder y re-agendar.
