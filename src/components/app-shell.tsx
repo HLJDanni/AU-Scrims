@@ -61,7 +61,7 @@ export function AppShell({ user, children }: { user: ShellUser; children: React.
     <SWRConfig value={{ fetcher, revalidateOnFocus: true, dedupingInterval: 1500, keepPreviousData: true }}>
       <ShellContext.Provider value={ctx}>
         <div className="flex min-h-dvh">
-          <aside className="sticky top-0 hidden h-dvh w-64 shrink-0 flex-col border-r border-void-500/60 bg-void-950/80 backdrop-blur lg:flex">
+          <aside className="sticky top-0 hidden h-dvh w-64 shrink-0 flex-col border-r border-void-500/60 bg-void-950 lg:flex">
             <Sidebar user={user} />
           </aside>
 
@@ -86,7 +86,7 @@ export function AppShell({ user, children }: { user: ShellUser; children: React.
           </AnimatePresence>
 
           <div className="flex min-w-0 flex-1 flex-col">
-            <header className="sticky top-0 z-30 flex h-16 items-center justify-between gap-3 border-b border-void-500/60 bg-void-950/75 px-4 backdrop-blur-md sm:px-6">
+            <header className="sticky top-0 z-30 flex h-16 items-center justify-between gap-3 border-b border-void-500/60 bg-void-950/95 px-4 sm:px-6">
               <div className="flex items-center gap-3">
                 <button className="rounded-md p-2 text-gold-100 hover:bg-void-700 lg:hidden" onClick={() => setMobileOpen(true)} aria-label="Abrir menú">
                   <Menu className="h-5 w-5" />
@@ -171,8 +171,11 @@ function Sidebar({ user, onNavigate }: { user: ShellUser; onNavigate?: () => voi
               <Icon className={cn("relative h-[18px] w-[18px] transition-transform duration-200 group-hover:scale-110", active && "text-gold-200")} />
               <span className="relative">{item.label}</span>
               {item.badge && awaiting > 0 && (
-                <span className="relative ml-auto flex h-5 min-w-5 animate-pulse-ring items-center justify-center rounded-full bg-hex-200 px-1.5 text-[10px] font-bold text-void-950">
-                  {awaiting}
+                <span className="relative ml-auto flex">
+                  <span className="absolute inset-0 animate-ping rounded-full bg-hex-200/50" />
+                  <span className="relative flex h-5 min-w-5 items-center justify-center rounded-full bg-hex-200 px-1.5 text-[10px] font-bold text-void-950">
+                    {awaiting}
+                  </span>
                 </span>
               )}
             </Link>

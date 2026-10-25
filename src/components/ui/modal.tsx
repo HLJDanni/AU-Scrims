@@ -41,15 +41,16 @@ export function Modal({ open, onClose, title, subtitle, children, variant = "cen
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
+          transition={{ duration: 0.15 }}
         >
-          <motion.div className="absolute inset-0 bg-void-950/75 backdrop-blur-sm" onClick={onClose} />
+          <motion.div className="absolute inset-0 bg-void-950/80" onClick={onClose} />
           <motion.div
             role="dialog"
             aria-modal="true"
             initial={drawer ? { x: "100%" } : { opacity: 0, scale: 0.94, y: 16 }}
             animate={drawer ? { x: 0 } : { opacity: 1, scale: 1, y: 0 }}
             exit={drawer ? { x: "100%" } : { opacity: 0, scale: 0.96, y: 10 }}
-            transition={{ type: "spring", stiffness: 360, damping: 34 }}
+            transition={drawer ? { type: "tween", ease: [0.22, 1, 0.36, 1], duration: 0.24 } : { type: "spring", stiffness: 520, damping: 38 }}
             className={cn(
               "hex-panel relative flex max-h-full flex-col bg-void-900/95",
               drawer ? "h-full w-full max-w-xl rounded-none border-y-0 border-r-0" : "max-h-[92dvh] w-full max-w-lg",

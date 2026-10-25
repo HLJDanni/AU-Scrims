@@ -19,15 +19,14 @@ export function ScrimCard({ scrim, index = 0, compact }: { scrim: ScrimDTO; inde
 
   return (
     <motion.div
-      layout
       initial={{ opacity: 0, y: 12 }}
       animate={{ opacity: 1, y: 0 }}
       exit={{ opacity: 0, scale: 0.97 }}
-      transition={{ delay: Math.min(index, 10) * 0.035, duration: 0.3, ease: [0.22, 1, 0.36, 1] }}
-      whileHover={{ x: 3 }}
+      transition={{ delay: Math.min(index, 8) * 0.025, duration: 0.2, ease: [0.22, 1, 0.36, 1] }}
+      whileHover={{ x: 3, transition: { duration: 0.1 } }}
       onClick={() => openDetail(scrim.id)}
       className={cn(
-        "group relative flex cursor-pointer items-center gap-4 overflow-hidden rounded-md border bg-void-900/70 p-4 transition-colors duration-200 hover:border-gold-500 hover:bg-void-800/80",
+        "group relative flex cursor-pointer items-center gap-4 overflow-hidden rounded-md border bg-void-900/70 p-4 transition-colors duration-100 hover:border-gold-500 hover:bg-void-800/80",
         st.awaitingMe || st.proposalForMe ? "border-hex-200/50" : "border-void-500/70",
       )}
     >

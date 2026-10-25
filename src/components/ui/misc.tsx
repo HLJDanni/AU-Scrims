@@ -104,13 +104,13 @@ export function StatCard({ label, value, hint, icon, accent = "gold", delay = 0 
       initial={{ opacity: 0, y: 14 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ delay, duration: 0.4, ease: [0.22, 1, 0.36, 1] }}
-      whileHover={{ y: -3 }}
+      whileHover={{ y: -3, transition: { duration: 0.12 } }}
       className="hex-panel group overflow-hidden p-5"
     >
       <div
         className={cn(
-          "pointer-events-none absolute -right-8 -top-8 h-28 w-28 rounded-full opacity-20 blur-2xl transition-opacity duration-300 group-hover:opacity-40",
-          accent === "gold" ? "bg-gold-300" : "bg-hex-200",
+          "pointer-events-none absolute -right-10 -top-10 h-32 w-32 rounded-full opacity-25 transition-opacity duration-150 group-hover:opacity-50",
+          accent === "gold" ? "bg-[radial-gradient(closest-side,#C89B3C,transparent)]" : "bg-[radial-gradient(closest-side,#0AC8B9,transparent)]",
         )}
       />
       <div className="flex items-center justify-between">

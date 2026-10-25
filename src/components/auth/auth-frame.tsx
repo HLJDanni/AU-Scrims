@@ -44,7 +44,7 @@ export function BackgroundRunes() {
         animate={{ rotate: -360 }}
         transition={{ duration: 90, repeat: Infinity, ease: "linear" }}
       />
-      <div className="absolute left-1/2 top-1/2 h-[420px] w-[420px] -translate-x-1/2 -translate-y-1/2 rounded-full bg-gold-300/5 blur-3xl" />
+      <div className="absolute left-1/2 top-1/2 h-[420px] w-[420px] -translate-x-1/2 -translate-y-1/2 rounded-full bg-[radial-gradient(closest-side,rgba(200,155,60,.08),transparent)]" />
     </div>
   );
 }

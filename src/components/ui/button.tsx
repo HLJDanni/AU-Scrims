@@ -40,10 +40,10 @@ export const Button = forwardRef<HTMLButtonElement, Props>(function Button(
       ref={ref}
       whileHover={disabled || loading ? undefined : { y: -1 }}
       whileTap={disabled || loading ? undefined : { scale: 0.97 }}
-      transition={{ type: "spring", stiffness: 500, damping: 30 }}
+      transition={{ type: "tween", duration: 0.1 }}
       disabled={disabled || loading}
       className={cn(
-        "inline-flex select-none items-center justify-center rounded-md uppercase tracking-wider transition-[background,border,color,box-shadow,filter] duration-200 disabled:cursor-not-allowed disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-hex-200/60",
+        "inline-flex select-none items-center justify-center rounded-md uppercase tracking-wider transition-[background-color,border-color,color,box-shadow,filter] duration-100 disabled:cursor-not-allowed disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-hex-200/60",
         variants[variant],
         sizes[size],
         className,

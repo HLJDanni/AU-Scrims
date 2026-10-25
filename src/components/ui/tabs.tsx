@@ -30,7 +30,7 @@ export function Tabs<T extends string>({
             aria-selected={active}
             onClick={() => onChange(t.id)}
             className={cn(
-              "relative flex shrink-0 items-center gap-2 font-display font-semibold uppercase tracking-[0.12em] transition-colors duration-200",
+              "relative flex shrink-0 items-center gap-2 font-display font-semibold uppercase tracking-[0.12em] transition-colors duration-100",
               size === "md" ? "px-4 py-3 text-xs" : "px-3 py-2 text-[11px]",
               active ? "text-gold-50" : "text-stone-400 hover:text-gold-100",
             )}
@@ -46,7 +46,7 @@ export function Tabs<T extends string>({
               <motion.span
                 layoutId={layoutId}
                 className="absolute inset-x-2 -bottom-px h-[2px] rounded-full bg-gold-gradient shadow-[0_0_12px_rgba(200,155,60,.8)]"
-                transition={{ type: "spring", stiffness: 420, damping: 34 }}
+                transition={{ type: "spring", stiffness: 700, damping: 45 }}
               />
             )}
           </button>
@@ -63,10 +63,10 @@ export function TabPanel({ id, children, className }: { id: string; children: Re
       <motion.div
         key={id}
         role="tabpanel"
-        initial={{ opacity: 0, y: 10, filter: "blur(4px)" }}
-        animate={{ opacity: 1, y: 0, filter: "blur(0px)" }}
-        exit={{ opacity: 0, y: -6, filter: "blur(4px)" }}
-        transition={{ duration: 0.22, ease: [0.22, 1, 0.36, 1] }}
+        initial={{ opacity: 0, y: 6 }}
+        animate={{ opacity: 1, y: 0 }}
+        exit={{ opacity: 0, y: -4 }}
+        transition={{ duration: 0.14, ease: [0.22, 1, 0.36, 1] }}
         className={className}
       >
         {children}

@@ -149,11 +149,10 @@ export function ScrimForm({
                   <motion.button
                     type="button"
                     key={t.id}
-                    layout
                     whileTap={{ scale: 0.98 }}
                     onClick={() => setOpponentId(t.id)}
                     className={cn(
-                      "flex items-center gap-3 rounded-md border px-3 py-2 text-left transition-all duration-200",
+                      "flex items-center gap-3 rounded-md border px-3 py-2 text-left transition-[border-color,background-color,box-shadow] duration-100",
                       sel ? "border-gold-200 bg-gold-200/10 shadow-gold" : "border-void-500 bg-void-950/50 hover:border-gold-500",
                     )}
                   >

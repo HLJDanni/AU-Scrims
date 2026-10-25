@@ -142,7 +142,7 @@ function Requests({ list }: { list?: ScrimDTO[] }) {
             key={s.id}
             onClick={() => setSection(s.id)}
             className={cn(
-              "flex min-w-max items-center gap-3 rounded-md border px-4 py-3 text-left transition-all duration-200",
+              "flex min-w-max items-center gap-3 rounded-md border px-4 py-3 text-left transition-[border-color,background-color,box-shadow,color] duration-100",
               section === s.id ? "border-gold-300/70 bg-gold-700/25 text-gold-50 shadow-gold" : "border-void-500/70 text-stone-300 hover:border-gold-500",
             )}
           >
@@ -233,7 +233,7 @@ function HistoryTab({ list }: { list?: ScrimDTO[] }) {
 
       {rows.length ? (
         <div className="space-y-2">
-          <AnimatePresence mode="popLayout">
+          <AnimatePresence>
             {rows.map((s, i) => (
               <ScrimCard key={s.id} scrim={s} index={i} />
             ))}

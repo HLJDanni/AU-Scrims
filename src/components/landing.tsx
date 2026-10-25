@@ -86,10 +86,10 @@ export function Landing({ loggedIn }: { loggedIn: boolean }) {
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true, margin: "-60px" }}
             transition={{ delay: i * 0.07, duration: 0.5 }}
-            whileHover={{ y: -4 }}
+            whileHover={{ y: -4, transition: { duration: 0.12 } }}
             className="hex-panel group p-6"
           >
-            <div className="mb-4 flex h-11 w-11 items-center justify-center rounded-md border border-gold-500/60 bg-void-800 text-gold-200 transition-all duration-300 group-hover:border-gold-200 group-hover:shadow-gold">
+            <div className="mb-4 flex h-11 w-11 items-center justify-center rounded-md border border-gold-500/60 bg-void-800 text-gold-200 transition-[border-color,box-shadow] duration-150 group-hover:border-gold-200 group-hover:shadow-gold">
               <f.icon className="h-5 w-5" />
             </div>
             <h3 className="font-display text-lg font-bold tracking-wide text-gold-50">{f.title}</h3>

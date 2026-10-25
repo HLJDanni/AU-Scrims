@@ -32,6 +32,36 @@ function useCountdown(target?: string) {
   };
 }
 
+/** Contador aislado: su tick de 1 s solo re-renderiza este bloque, no todo el dashboard. */
+function Countdown({ target }: { target: string }) {
+  const cd = useCountdown(target)!;
+  if (cd.live)
+    return (
+      <p className="mt-4 flex items-center gap-2 font-display text-xl font-bold text-hex-200">
+        <span className="h-2.5 w-2.5 animate-ping rounded-full bg-hex-200" /> EN CURSO
+      </p>
+    );
+  return (
+    <div className="mt-4 grid grid-cols-4 gap-2 text-center">
+      {(
+        [
+          ["d", cd.d],
+          ["h", cd.h],
+          ["m", cd.m],
+          ["s", cd.s],
+        ] as const
+      ).map(([k, v]) => (
+        <div key={k} className="rounded bg-void-800 py-2">
+          <motion.p key={v} initial={{ y: -4, opacity: 0.4 }} animate={{ y: 0, opacity: 1 }} transition={{ duration: 0.15 }} className="font-display text-xl font-bold tabular-nums text-gold-50">
+            {String(v).padStart(2, "0")}
+          </motion.p>
+          <p className="text-[10px] uppercase text-stone-400">{k}</p>
+        </div>
+      ))}
+    </div>
+  );
+}
+
 export function DashboardView() {
   const { user, openCreate, openDetail } = useShell();
   const upcoming = useSWR<{ scrims: ScrimDTO[] }>("/api/scrims?scope=upcoming");
@@ -39,7 +69,6 @@ export function DashboardView() {
   const board = useSWR<{ teams: LeaderboardRow[] }>("/api/leaderboard");
 
   const next = upcoming.data?.scrims[0];
-  const cd = useCountdown(next?.startAt);
   const me = board.data?.teams.find((t) => t.id === user.team.id);
   const actionable = (requests.data?.scrims ?? []).filter((s) => scrimState(s).awaitingMe || scrimState(s).proposalForMe);
   const tier = tierFor(me?.rating ?? user.team.rating);
@@ -53,8 +82,8 @@ export function DashboardView() {
         transition={{ duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
         className="hex-panel relative overflow-hidden p-6 sm:p-8"
       >
-        <div className="pointer-events-none absolute -right-24 -top-24 h-80 w-80 rounded-full bg-gold-300/10 blur-3xl" />
-        <div className="pointer-events-none absolute -bottom-32 left-1/3 h-72 w-72 rounded-full bg-hex-200/10 blur-3xl" />
+        <div className="pointer-events-none absolute -right-24 -top-24 h-80 w-80 rounded-full bg-[radial-gradient(closest-side,rgba(200,155,60,.16),transparent)]" />
+        <div className="pointer-events-none absolute -bottom-32 left-1/3 h-72 w-72 rounded-full bg-[radial-gradient(closest-side,rgba(10,200,185,.14),transparent)]" />
         <div className="relative grid gap-8 lg:grid-cols-[1fr_auto] lg:items-center">
           <div className="flex items-center gap-5">
             <TeamEmblem team={user.team} size={84} className="animate-float" />
@@ -83,7 +112,7 @@ export function DashboardView() {
             </p>
             {upcoming.isLoading ? (
               <Skeleton className="mt-3 h-20" />
-            ) : next && cd ? (
+            ) : next ? (
               <button className="mt-3 w-full text-left" onClick={() => openDetail(next.id)}>
                 <div className="flex items-center gap-3">
                   <TeamEmblem team={next.opponent} size={40} />
@@ -92,27 +121,7 @@ export function DashboardView() {
                     <p className="truncate text-xs text-stone-400 first-letter:uppercase">{fmtFull(next.startAt, next.endAt)}</p>
                   </div>
                 </div>
-                {cd.live ? (
-                  <p className="mt-4 flex items-center gap-2 font-display text-xl font-bold text-hex-200">
-                    <span className="h-2.5 w-2.5 animate-ping rounded-full bg-hex-200" /> EN CURSO
-                  </p>
-                ) : (
-                  <div className="mt-4 grid grid-cols-4 gap-2 text-center">
-                    {[
-                      ["d", cd.d],
-                      ["h", cd.h],
-                      ["m", cd.m],
-                      ["s", cd.s],
-                    ].map(([k, v]) => (
-                      <div key={k as string} className="rounded bg-void-800 py-2">
-                        <motion.p key={v as number} initial={{ y: -6, opacity: 0 }} animate={{ y: 0, opacity: 1 }} className="font-display text-xl font-bold text-gold-50">
-                          {String(v).padStart(2, "0")}
-                        </motion.p>
-                        <p className="text-[10px] uppercase text-stone-400">{k}</p>
-                      </div>
-                    ))}
-                  </div>
-                )}
+                <Countdown target={next.startAt} />
                 <div className="mt-3 flex items-center gap-3 text-xs text-stone-300">
                   <span className="flex items-center gap-1">
                     <Gamepad2 className="h-3.5 w-3.5 text-gold-200" /> {next.games} juegos
