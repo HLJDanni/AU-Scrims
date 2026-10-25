@@ -10,7 +10,7 @@ import { useShell } from "../app-shell";
 import { scrimState, useScrimActions } from "./use-scrim-actions";
 
 export function ScrimCard({ scrim, index = 0, compact }: { scrim: ScrimDTO; index?: number; compact?: boolean }) {
-  const { openDetail } = useShell();
+  const { openDetail, canAct } = useShell();
   const st = scrimState(scrim);
   const a = useScrimActions();
   const done = scrim.status === "COMPLETED";
@@ -83,7 +83,7 @@ export function ScrimCard({ scrim, index = 0, compact }: { scrim: ScrimDTO; inde
             </p>
           )}
         </div>
-      ) : st.awaitingMe && !compact ? (
+      ) : canAct && st.awaitingMe && !compact ? (
         <div className="flex gap-2" onClick={(e) => e.stopPropagation()}>
           <Button size="sm" variant="hex" loading={a.busy === "accept"} onClick={() => a.accept(scrim)}>
             <Check className="h-3.5 w-3.5" /> Aceptar
@@ -92,13 +92,13 @@ export function ScrimCard({ scrim, index = 0, compact }: { scrim: ScrimDTO; inde
             <X className="h-4 w-4" />
           </Button>
         </div>
-      ) : st.proposalForMe && !compact ? (
+      ) : canAct && st.proposalForMe && !compact ? (
         <div className="flex gap-2" onClick={(e) => e.stopPropagation()}>
           <Button size="sm" variant="hex" loading={a.busy === "acceptProposal"} onClick={() => a.acceptProposal(scrim)}>
             Aprobar horario
           </Button>
         </div>
-      ) : st.canReport ? (
+      ) : canAct && st.canReport ? (
         <span className="rounded-full border border-gold-300/60 px-2.5 py-1 text-[10px] font-semibold uppercase tracking-wider text-gold-200">
           Registrar resultado
         </span>

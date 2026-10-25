@@ -1,12 +1,12 @@
 import { db } from "@/lib/db";
-import { fail, parseBody, withTeam } from "@/lib/api";
+import { fail, parseBody, withTeam, withUser } from "@/lib/api";
 import { createTournamentSchema } from "@/lib/validators";
 import { DIVISIONS } from "@/lib/tournament-rules";
 import { eligibilityOf, tournamentList } from "@/lib/tournaments";
 
-/** Torneos (todas las divisiones) y la elegibilidad de mi equipo. */
-export const GET = withTeam(async ({ user }) => {
-  const [tournaments, eligibility] = await Promise.all([tournamentList(), eligibilityOf(user.teamId)]);
+/** Torneos (todas las divisiones) y la elegibilidad de mi equipo (null si no tengo equipo). */
+export const GET = withUser(async ({ user }) => {
+  const [tournaments, eligibility] = await Promise.all([tournamentList(), user.teamId ? eligibilityOf(user.teamId) : null]);
   return { tournaments, eligibility };
 });
 

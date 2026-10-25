@@ -17,7 +17,7 @@ import { PlayersTab } from "./players-tab";
 import { useShell } from "../app-shell";
 
 type TeamData = {
-  team: { id: string; name: string; tag: string; color: string; region: string; rating: number; description: string | null; createdAt: string; inviteCode: string };
+  team: { id: string; name: string; tag: string; color: string; region: string; rating: number; description: string | null; createdAt: string; inviteCode: string | null };
   members: { id: string; username: string; role: Role; createdAt: string }[];
   canManage: boolean;
   canManagePlayers: boolean;
@@ -69,7 +69,8 @@ export function TeamView() {
         tabs={[
           { id: "players", label: "Jugadores", icon: <Swords className="h-4 w-4" /> },
           { id: "roster", label: "Staff", icon: <Users className="h-4 w-4" />, count: data.members.length },
-          { id: "invite", label: "Invitación", icon: <KeyRound className="h-4 w-4" /> },
+          // La Leyenda no recibe el código de invitación
+          ...(data.team.inviteCode ? [{ id: "invite" as const, label: "Invitación", icon: <KeyRound className="h-4 w-4" /> }] : []),
           { id: "stats", label: "Estadísticas", icon: <BarChart3 className="h-4 w-4" /> },
           ...(data.canManage ? [{ id: "settings" as const, label: "Ajustes", icon: <Settings className="h-4 w-4" /> }] : []),
         ]}
@@ -77,7 +78,7 @@ export function TeamView() {
       <TabPanel id={tab}>
         {tab === "players" && <PlayersTab canEdit={data.canManagePlayers} />}
         {tab === "roster" && <Roster data={data} onChange={() => mutate()} />}
-        {tab === "invite" && <Invite data={data} onChange={() => mutate()} />}
+        {tab === "invite" && data.team.inviteCode && <Invite data={data} onChange={() => mutate()} />}
         {tab === "stats" && <Stats data={data} />}
         {tab === "settings" && data.canManage && (
           <div className="space-y-6">
@@ -156,6 +157,7 @@ function Roster({ data, onChange }: { data: TeamData; onChange: () => void }) {
 
 function Invite({ data, onChange }: { data: TeamData; onChange: () => void }) {
   const [busy, setBusy] = useState(false);
+  const inviteCode = data.team.inviteCode ?? "";
   async function regenerate() {
     if (!window.confirm("El código anterior dejará de funcionar. ¿Continuar?")) return;
     setBusy(true);
@@ -174,8 +176,8 @@ function Invite({ data, onChange }: { data: TeamData; onChange: () => void }) {
       <ShieldCheck className="mx-auto h-10 w-10 text-gold-200" />
       <h3 className="mt-3 font-display text-xl font-bold tracking-wide text-gold-50">Código de invitación</h3>
       <p className="mt-1 text-sm text-stone-300">Compártelo solo con el coach, analistas y capitán. Al registrarse elegirán “Unirme a un equipo”.</p>
-      <motion.div key={data.team.inviteCode} initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} className="mx-auto mt-6 inline-flex items-center gap-1">
-        {data.team.inviteCode.split("").map((c, i) => (
+      <motion.div key={inviteCode} initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} className="mx-auto mt-6 inline-flex items-center gap-1">
+        {inviteCode.split("").map((c, i) => (
           <motion.span
             key={i}
             initial={{ y: -10, opacity: 0 }}
@@ -190,7 +192,7 @@ function Invite({ data, onChange }: { data: TeamData; onChange: () => void }) {
       <div className="mt-6 flex justify-center gap-2">
         <Button
           variant="secondary"
-          onClick={() => navigator.clipboard.writeText(data.team.inviteCode).then(() => toast.success("Código copiado"))}
+          onClick={() => navigator.clipboard.writeText(inviteCode).then(() => toast.success("Código copiado"))}
         >
           <Copy className="h-4 w-4" /> Copiar
         </Button>

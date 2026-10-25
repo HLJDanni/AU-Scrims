@@ -8,9 +8,10 @@ import { AuthFrame } from "@/components/auth/auth-frame";
 import { TeamFields, emptyTeam } from "@/components/auth/team-fields";
 import { Button } from "@/components/ui/button";
 
-export function OnboardingForm({ username }: { username: string }) {
+export function OnboardingForm({ username, legend = false }: { username: string; legend?: boolean }) {
   const router = useRouter();
   const [mode, setMode] = useState<"create" | "join">("join");
+  // La Leyenda no crea equipos: solo se une con código o sigue como espectadora
   const [team, setTeam] = useState(emptyTeam);
   const [code, setCode] = useState("");
   const [loading, setLoading] = useState(false);
@@ -33,7 +34,7 @@ export function OnboardingForm({ username }: { username: string }) {
     <AuthFrame
       wide
       title={`Hola, ${username}`}
-      subtitle="Necesitas pertenecer a un equipo para agendar y ver scrims"
+      subtitle={legend ? "Únete a un equipo con su código para ver sus scrims, o sigue como espectador" : "Necesitas pertenecer a un equipo para agendar y ver scrims"}
       footer={
         <a href="/logout" className="text-stone-400 hover:text-gold-50">
           Cerrar sesión
@@ -41,10 +42,10 @@ export function OnboardingForm({ username }: { username: string }) {
       }
     >
       <form onSubmit={submit} className="space-y-5">
-        <div className="grid grid-cols-2 gap-3">
+        <div className={cn("grid gap-3", legend ? "grid-cols-1" : "grid-cols-2")}>
           {[
             { id: "join" as const, label: "Unirme con código", icon: <KeyRound className="h-5 w-5" /> },
-            { id: "create" as const, label: "Crear equipo", icon: <PlusCircle className="h-5 w-5" /> },
+            ...(legend ? [] : [{ id: "create" as const, label: "Crear equipo", icon: <PlusCircle className="h-5 w-5" /> }]),
           ].map((m) => (
             <button
               type="button"
@@ -73,6 +74,11 @@ export function OnboardingForm({ username }: { username: string }) {
         <Button type="submit" size="lg" className="w-full" loading={loading}>
           Continuar
         </Button>
+        {legend && (
+          <a href="/leaderboard" className="block text-center text-sm text-stone-300 hover:text-gold-50">
+            Seguir como espectador (sin equipo)
+          </a>
+        )}
       </form>
     </AuthFrame>
   );

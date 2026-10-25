@@ -4,7 +4,7 @@ import { SignJWT, jwtVerify } from "jose";
 export const SESSION_COOKIE = "aus_session";
 export const SESSION_TTL_SECONDS = 60 * 60 * 24 * 7; // 7 días
 
-export type SessionPayload = { sub: string; role: "COACH" | "ANALYST" | "CAPTAIN" };
+export type SessionPayload = { sub: string; role: "COACH" | "ANALYST" | "CAPTAIN" | "LEGEND" };
 
 function secret() {
   const value = process.env.JWT_SECRET;

@@ -264,7 +264,7 @@ function GroupBox({
   onReport,
 }: {
   group: Group;
-  me: string;
+  me: string | null;
   hover: string | null;
   onHover: (id: string | null) => void;
   onReport: (m: MatchDTO) => void;
@@ -306,7 +306,7 @@ function GroupBox({
   );
 }
 
-function Match({ m, me, hover, onHover, onReport }: { m: MatchDTO; me: string; hover: string | null; onHover: (id: string | null) => void; onReport: (m: MatchDTO) => void }) {
+function Match({ m, me, hover, onHover, onReport }: { m: MatchDTO; me: string | null; hover: string | null; onHover: (id: string | null) => void; onReport: (m: MatchDTO) => void }) {
   const mine = m.teamA.id === me || m.teamB?.id === me;
   const involved = hover && (m.teamA.id === hover || m.teamB?.id === hover);
   const mixed = !m.bye && m.recordB !== null && m.recordB !== m.recordA;

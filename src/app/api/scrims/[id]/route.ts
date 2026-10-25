@@ -1,5 +1,5 @@
 import { db } from "@/lib/db";
-import { fail, parseBody, withTeam } from "@/lib/api";
+import { fail, parseBody, withStaff, withTeam } from "@/lib/api";
 import { updateScrimSchema } from "@/lib/validators";
 import { loadOwnScrim, logEvent, scrimInclude, toDTO } from "@/lib/scrims";
 
@@ -24,7 +24,7 @@ export const GET = withTeam<{ id: string }>(async ({ user, params }) => {
 });
 
 /** Actualiza el link de sala y/o notas. */
-export const PATCH = withTeam<{ id: string }>(async ({ req, user, params }) => {
+export const PATCH = withStaff<{ id: string }>(async ({ req, user, params }) => {
   const body = await parseBody(req, updateScrimSchema);
   const scrim = await loadOwnScrim(params.id, user.teamId);
   if (scrim.status === "CANCELLED" || scrim.status === "DECLINED") fail(400, "Este scrim ya no está activo");

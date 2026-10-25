@@ -55,6 +55,14 @@ Con el stack levantado: `npm test` (Vitest + Playwright). El detalle de cada pru
 - **Resultados y ranking:** al registrar el marcador se actualiza el rating Elo de ambos equipos (K=32, ponderado por juegos jugados). Divisiones de Hierro a Retador.
 - **Historial:** solo de tu equipo, con filtros (victorias, derrotas, cancelados) y récord contra cada rival.
 
+## Rol Leyenda y privacidad
+
+- **Leyenda:** rol de solo lectura. Sin equipo ve el ranking de equipos, el de jugadores y los torneos (bracket y equipos inscritos). Si pertenece a un equipo, además ve los scrims, el calendario y el roster **de su equipo**, sin poder agendar ni editar. Se registra eligiendo "Sin equipo" o con un código de invitación.
+- **Privacidad mutua:** los jugadores (Riot ID y op.gg) de un equipo solo los ve su propio equipo. El coach y el analista de otro equipo los ven únicamente cuando ambos tienen un scrim agendado o jugado. El ELO promedio sí es visible para todos.
+- **Excepción:** la sección *Jugadores* muestra el top por win rate con Riot ID, equipo, rol, KDA y evolución, sin op.gg ni roster completo.
+
+Usuarios de prueba: `leyenda` (sin equipo), `leyenda.hxw` y `leyenda.cld` (con equipo); se crean con `npm run simulate:players`, que también genera el KDA y la evolución demo mientras no haya `RIOT_API_KEY` (`--reset` regenera solo esos datos).
+
 ## Torneos suizos
 
 Mini torneos dentro de la app (**Torneos** en el menú), formato suizo como el Mundial: **3 victorias clasifican, 3 derrotas eliminan**; partidos Bo1 y **Bo3 cuando un equipo puede clasificar o quedar eliminado**. Con número impar, uno descansa por ronda (cuenta como victoria). Las rondas siguientes se emparejan solas por récord, sin repetir rival si hay alternativa.

@@ -53,7 +53,7 @@ export const GET = withTeam(async ({ user }) => {
       rating: team.rating,
       description: team.description,
       createdAt: team.createdAt,
-      inviteCode: team.inviteCode,
+      inviteCode: user.role === "LEGEND" ? null : team.inviteCode,
     },
     members: team.members,
     canManage: isCoach,
@@ -73,6 +73,7 @@ export const GET = withTeam(async ({ user }) => {
 /** Crear equipo (usuario sin equipo). */
 export const POST = withUser(async ({ req, user }) => {
   if (user.teamId) fail(400, "Ya perteneces a un equipo");
+  if (user.role === "LEGEND") fail(403, "Una Leyenda no puede crear equipos; únete con un código");
   const data = await parseBody(req, createTeamSchema);
   const dup = await db.team.findFirst({
     where: { OR: [{ name: { equals: data.name, mode: "insensitive" } }, { tag: data.tag }] },

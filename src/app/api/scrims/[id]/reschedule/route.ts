@@ -1,5 +1,5 @@
 import { db } from "@/lib/db";
-import { fail, parseBody, withTeam } from "@/lib/api";
+import { fail, parseBody, withStaff } from "@/lib/api";
 import { rescheduleSchema } from "@/lib/validators";
 import { assertNoOverlap, loadOwnScrim, logEvent, scrimInclude, toDTO } from "@/lib/scrims";
 
@@ -11,7 +11,7 @@ const fmt = (d: Date) =>
  *  - Si la solicitud sigue PENDIENTE y la hizo mi equipo → se mueve directamente.
  *  - En cualquier otro caso → queda una propuesta que el otro equipo debe aprobar.
  */
-export const POST = withTeam<{ id: string }>(async ({ req, user, params }) => {
+export const POST = withStaff<{ id: string }>(async ({ req, user, params }) => {
   const body = await parseBody(req, rescheduleSchema);
   const scrim = await loadOwnScrim(params.id, user.teamId);
   if (scrim.status !== "PENDING" && scrim.status !== "CONFIRMED") fail(400, "Este scrim no se puede re-agendar");

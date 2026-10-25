@@ -21,6 +21,7 @@ export function RoleBadge({ role }: { role: Role }) {
     COACH: "text-gold-200 border-gold-200/50 bg-gold-200/10",
     ANALYST: "text-hex-200 border-hex-200/50 bg-hex-200/10",
     CAPTAIN: "text-gold-50 border-gold-50/40 bg-gold-50/10",
+    LEGEND: "text-[#B57BFF] border-[#B57BFF]/50 bg-[#B57BFF]/10",
   };
   return (
     <span className={cn("inline-flex rounded border px-2 py-0.5 text-[10px] font-bold uppercase tracking-widest", colors[role])}>

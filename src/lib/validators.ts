@@ -1,7 +1,7 @@
 import { z } from "zod";
 import { OPGG_ERRORS, parseOpggUrl } from "./lol";
 
-export const roleSchema = z.enum(["COACH", "ANALYST", "CAPTAIN"], { message: "Selecciona un rol válido" });
+export const roleSchema = z.enum(["COACH", "ANALYST", "CAPTAIN", "LEGEND"], { message: "Selecciona un rol válido" });
 
 const password = z
   .string()
@@ -70,11 +70,13 @@ export const registerSchema = z
     email: z.string().trim().toLowerCase().email("Correo inválido"),
     password,
     role: roleSchema,
-    mode: z.enum(["create", "join"]),
+    mode: z.enum(["create", "join", "none"]),
     team: createTeamSchema.optional(),
     inviteCode: z.string().trim().toUpperCase().optional(),
   })
   .superRefine((v, ctx) => {
+    if (v.mode === "create" && v.role === "LEGEND") ctx.addIssue({ code: "custom", message: "Una Leyenda no puede crear equipos; únete con un código o entra sin equipo" });
+    if (v.mode === "none" && v.role !== "LEGEND") ctx.addIssue({ code: "custom", message: "El staff debe crear un equipo o unirse a uno" });
     if (v.mode === "create" && !v.team) ctx.addIssue({ code: "custom", message: "Completa los datos del equipo" });
     if (v.mode === "join" && !v.inviteCode) ctx.addIssue({ code: "custom", message: "Ingresa el código de invitación" });
   });

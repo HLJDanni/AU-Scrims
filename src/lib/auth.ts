@@ -45,6 +45,7 @@ export type CurrentUser = NonNullable<Awaited<ReturnType<typeof getCurrentUser>>
 export async function requirePageUser({ needsTeam = true } = {}) {
   const user = await getCurrentUser();
   if (!user) redirect("/logout"); // limpia una cookie huérfana y manda a /login
-  if (needsTeam && !user.teamId) redirect("/onboarding");
+  // Una Leyenda puede no tener equipo: va al ranking en lugar del onboarding
+  if (needsTeam && !user.teamId) redirect(user.role === "LEGEND" ? "/leaderboard" : "/onboarding");
   return user;
 }

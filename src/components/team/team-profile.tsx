@@ -1,6 +1,6 @@
 "use client";
 import { motion } from "framer-motion";
-import { AlertTriangle, ExternalLink, Users } from "lucide-react";
+import { AlertTriangle, ExternalLink, Lock, Users } from "lucide-react";
 import useSWR from "swr";
 import { POSITIONS, formatRank, tierMeta, type LolTier, type Position } from "@/lib/lol";
 import { cn } from "@/lib/client";
@@ -28,6 +28,8 @@ export type TeamProfile = {
   players: PlayerDTO[];
   eloAverage: { tier: LolTier; label: string; color: string; count: number } | null;
   rankSync: boolean;
+  /** Motivo por el que no se envían los jugadores (privacidad mutua), o null si se pueden ver */
+  rosterHidden?: string | null;
 };
 
 /** Pista de posible smurf: cuenta de nivel bajo o con muy pocas partidas clasificatorias. */
@@ -166,7 +168,13 @@ export function TeamProfileCard({ teamId, label }: { teamId: string; label: stri
       <p className={cn("mb-3 whitespace-pre-wrap text-sm", data.team.description ? "text-stone-300" : "italic text-stone-400")}>
         {data.team.description || "Este equipo aún no tiene descripción."}
       </p>
-      <PlayerList players={starters} />
+      {data.rosterHidden ? (
+        <p className="flex items-center gap-2 rounded-md border border-dashed border-void-500 p-3 text-xs text-stone-400">
+          <Lock className="h-3.5 w-3.5 shrink-0" /> Roster privado · {data.rosterHidden}
+        </p>
+      ) : (
+        <PlayerList players={starters} />
+      )}
       {subs.length > 0 && (
         <details className="mt-2 group">
           <summary className="cursor-pointer select-none text-xs text-stone-400 hover:text-gold-100">Suplentes ({subs.length})</summary>

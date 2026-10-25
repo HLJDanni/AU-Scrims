@@ -12,6 +12,7 @@ enum Role {
   COACH
   ANALYST
   CAPTAIN
+  LEGEND // "Leyenda": solo lectura (ranking, torneos y, si tiene equipo, los datos de su equipo)
 }
 
 enum Position {
@@ -153,24 +154,26 @@ model ScrimEvent {
 
 // Jugadores de LoL del equipo (no son usuarios de la plataforma). Se guarda su cuenta principal.
 model Player {
-  id            String    @id @default(cuid())
+  id            String           @id @default(cuid())
   teamId        String
-  team          Team      @relation(fields: [teamId], references: [id], onDelete: Cascade)
+  team          Team             @relation(fields: [teamId], references: [id], onDelete: Cascade)
   gameName      String
   tagLine       String
   opggUrl       String // perfil de op.gg (obligatorio al registrar)
   position      Position
   tier          LolTier?
   division      Int? // 1-4 (null para Maestro+ o sin rango)
-  lp            Int       @default(0)
+  lp            Int              @default(0)
   // Datos sincronizados desde la API oficial de Riot (la misma fuente que usa op.gg)
-  puuid         String?   @unique
+  puuid         String?          @unique
   summonerLevel Int?
   wins          Int?
   losses        Int?
   rankUpdatedAt DateTime?
-  createdAt     DateTime  @default(now())
-  updatedAt     DateTime  @updatedAt
+  matches       PlayerMatch[]
+  snapshots     PlayerSnapshot[]
+  createdAt     DateTime         @default(now())
+  updatedAt     DateTime         @updatedAt
 
   @@unique([gameName, tagLine])
   @@index([teamId])
@@ -230,4 +233,35 @@ model TournamentMatch {
   createdAt    DateTime   @default(now())
 
   @@index([tournamentId, round])
+}
+
+// Partidas clasificatorias recientes (de la API de Riot) para calcular KDA
+model PlayerMatch {
+  id       String   @id @default(cuid())
+  playerId String
+  player   Player   @relation(fields: [playerId], references: [id], onDelete: Cascade)
+  matchId  String
+  kills    Int
+  deaths   Int
+  assists  Int
+  win      Boolean
+  playedAt DateTime
+
+  @@unique([playerId, matchId])
+  @@index([playerId, playedAt])
+}
+
+// Foto del rango en cada sincronización, para ver cómo crece cada jugador
+model PlayerSnapshot {
+  id       String   @id @default(cuid())
+  playerId String
+  player   Player   @relation(fields: [playerId], references: [id], onDelete: Cascade)
+  takenAt  DateTime @default(now())
+  tier     LolTier?
+  division Int?
+  lp       Int      @default(0)
+  wins     Int      @default(0)
+  losses   Int      @default(0)
+
+  @@index([playerId, takenAt])
 }

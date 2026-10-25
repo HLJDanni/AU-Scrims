@@ -6,10 +6,15 @@ import useSWR from "swr";
 import { toast } from "sonner";
 import { api, cn, refreshScrims } from "@/lib/client";
 import type { ScrimDTO, TeamLite } from "@/lib/constants";
+import type { LolTier } from "@/lib/lol";
 import { combine, durationLabel, fmtFull, toDateInput, toTimeInput } from "@/lib/dates";
 import { Modal } from "../ui/modal";
 import { Button } from "../ui/button";
 import { TeamEmblem } from "../ui/misc";
+import { RankIcon } from "../ui/rank-icon";
+import { EloFilter, type EloFilterValue } from "./elo-filter";
+
+type RivalTeam = TeamLite & { elo: { tier: LolTier; label: string; color: string } | null };
 
 export type ScrimFormPrefill = { startAt?: Date; endAt?: Date; opponentTeamId?: string };
 
@@ -37,6 +42,7 @@ export function ScrimForm({
   const reschedule = Boolean(scrim);
   const [opponentId, setOpponentId] = useState("");
   const [query, setQuery] = useState("");
+  const [elo, setElo] = useState<EloFilterValue>("ANY");
   const [date, setDate] = useState("");
   const [start, setStart] = useState("");
   const [end, setEnd] = useState("");
@@ -58,13 +64,27 @@ export function ScrimForm({
     setRoomLink("");
     setNotes("");
     setQuery("");
+    setElo("ANY");
   }, [open, scrim, prefill]);
 
-  const { data } = useSWR<{ teams: TeamLite[] }>(open && !reschedule ? "/api/teams" : null);
+  const { data } = useSWR<{ teams: RivalTeam[] }>(open && !reschedule ? "/api/teams" : null);
+  // Cantidad de rivales por liga (según el ELO promedio de sus titulares)
+  const eloCounts = useMemo(() => {
+    const c: Record<string, number> = {};
+    for (const t of data?.teams ?? []) {
+      const k = t.elo?.tier ?? "NONE";
+      c[k] = (c[k] ?? 0) + 1;
+    }
+    return c;
+  }, [data]);
   const teams = useMemo(() => {
     const q = query.trim().toLowerCase();
-    return (data?.teams ?? []).filter((t) => !q || t.name.toLowerCase().includes(q) || t.tag.toLowerCase().includes(q));
-  }, [data, query]);
+    return (data?.teams ?? []).filter(
+      (t) =>
+        (!q || t.name.toLowerCase().includes(q) || t.tag.toLowerCase().includes(q)) &&
+        (elo === "ANY" || (elo === "NONE" ? !t.elo : t.elo?.tier === elo)),
+    );
+  }, [data, query, elo]);
 
   const startAt = date && start ? combine(date, start) : null;
   let endAt = date && end ? combine(date, end) : null;
@@ -136,9 +156,12 @@ export function ScrimForm({
         {!reschedule && (
           <section>
             <label className="label">Equipo rival</label>
-            <div className="relative mb-3">
-              <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-stone-400" />
-              <input className="field pl-9" placeholder="Buscar por nombre o tag…" value={query} onChange={(e) => setQuery(e.target.value)} />
+            <div className="mb-3 grid gap-2 sm:grid-cols-[1fr_210px]">
+              <div className="relative">
+                <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-stone-400" />
+                <input className="field pl-9" placeholder="Buscar por nombre o tag…" value={query} onChange={(e) => setQuery(e.target.value)} />
+              </div>
+              <EloFilter value={elo} onChange={setElo} counts={eloCounts} />
             </div>
             <div className="grid max-h-52 grid-cols-1 gap-2 overflow-y-auto pr-1 sm:grid-cols-2">
               {!data &&
@@ -160,7 +183,10 @@ export function ScrimForm({
                     <div className="min-w-0 flex-1">
                       <p className="truncate text-sm font-semibold text-gold-50">{t.name}</p>
                       <p className="text-[11px] text-stone-400">
-                        {t.region} · {t.rating} pts
+                        {t.region} · {t.rating.toLocaleString("es-MX")} pts
+                      </p>
+                      <p className="mt-0.5 flex items-center gap-1 text-[11px] font-semibold" style={{ color: t.elo?.color ?? "#7B7A72" }}>
+                        <RankIcon tier={t.elo?.tier} size={16} /> {t.elo ? `Promedio ${t.elo.label}` : "Sin ELO registrado"}
                       </p>
                     </div>
                     <AnimatePresence>
@@ -173,7 +199,11 @@ export function ScrimForm({
                   </motion.button>
                 );
               })}
-              {data && teams.length === 0 && <p className="col-span-full py-4 text-center text-sm text-stone-400">Sin resultados</p>}
+              {data && teams.length === 0 && (
+                <p className="col-span-full py-4 text-center text-sm text-stone-400">
+                  {elo !== "ANY" ? "Ningún equipo con ese ELO promedio" : "Sin resultados"}
+                </p>
+              )}
             </div>
           </section>
         )}

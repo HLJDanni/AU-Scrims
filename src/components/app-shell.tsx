@@ -2,7 +2,7 @@
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { AnimatePresence, motion } from "framer-motion";
-import { CalendarDays, Crown, LayoutDashboard, LogOut, Menu, Plus, Swords, Trophy, Users, X } from "lucide-react";
+import { CalendarDays, Crown, LayoutDashboard, TrendingUp, LogOut, Menu, Plus, Swords, Trophy, Users, X } from "lucide-react";
 import { createContext, useContext, useState } from "react";
 import { SWRConfig } from "swr";
 import useSWR from "swr";
@@ -18,11 +18,13 @@ export type ShellUser = {
   id: string;
   username: string;
   role: Role;
-  team: { id: string; name: string; tag: string; color: string; region: string; rating: number };
+  team: { id: string; name: string; tag: string; color: string; region: string; rating: number } | null;
 };
 
 type Ctx = {
   user: ShellUser;
+  /** Puede agendar, responder y editar (staff con equipo). La Leyenda solo consulta. */
+  canAct: boolean;
   openCreate: (prefill?: ScrimFormPrefill) => void;
   openReschedule: (scrim: ScrimDTO) => void;
   openDetail: (id: string) => void;
@@ -34,13 +36,15 @@ export const useShell = () => {
   return ctx;
 };
 
+// team: requiere equipo · staff: oculto para la Leyenda
 const NAV = [
-  { href: "/dashboard", label: "Inicio", icon: LayoutDashboard },
-  { href: "/calendar", label: "Calendario", icon: CalendarDays },
-  { href: "/scrims", label: "Scrims", icon: Swords, badge: true },
+  { href: "/dashboard", label: "Inicio", icon: LayoutDashboard, team: true, staff: true },
+  { href: "/calendar", label: "Calendario", icon: CalendarDays, team: true },
+  { href: "/scrims", label: "Scrims", icon: Swords, badge: true, team: true },
   { href: "/leaderboard", label: "Ranking", icon: Trophy },
+  { href: "/players", label: "Jugadores", icon: TrendingUp },
   { href: "/tournaments", label: "Torneos", icon: Crown },
-  { href: "/team", label: "Mi equipo", icon: Users },
+  { href: "/team", label: "Mi equipo", icon: Users, team: true },
 ];
 
 export function AppShell({ user, children }: { user: ShellUser; children: React.ReactNode }) {
@@ -48,8 +52,10 @@ export function AppShell({ user, children }: { user: ShellUser; children: React.
   const [detailId, setDetailId] = useState<string | null>(null);
   const [mobileOpen, setMobileOpen] = useState(false);
 
+  const canAct = Boolean(user.team) && user.role !== "LEGEND";
   const ctx: Ctx = {
     user,
+    canAct,
     openCreate: (prefill) => setForm({ open: true, prefill }),
     openReschedule: (scrim) => {
       setDetailId(null);
@@ -96,18 +102,29 @@ export function AppShell({ user, children }: { user: ShellUser; children: React.
                   <Logo compact />
                 </div>
                 <div className="hidden items-center gap-3 lg:flex">
-                  <TeamEmblem team={user.team} size={34} />
-                  <div className="leading-tight">
-                    <p className="font-display text-sm font-bold tracking-wide text-gold-50">{user.team.name}</p>
-                    <p className="text-[11px] text-stone-400">
-                      {user.team.region} · Staff del equipo
-                    </p>
-                  </div>
+                  {user.team ? (
+                    <>
+                      <TeamEmblem team={user.team} size={34} />
+                      <div className="leading-tight">
+                        <p className="font-display text-sm font-bold tracking-wide text-gold-50">{user.team.name}</p>
+                        <p className="text-[11px] text-stone-400">
+                          {user.team.region} · {canAct ? "Staff del equipo" : "Vista de Leyenda (solo lectura)"}
+                        </p>
+                      </div>
+                    </>
+                  ) : (
+                    <div className="leading-tight">
+                      <p className="font-display text-sm font-bold tracking-wide text-gold-50">Modo espectador</p>
+                      <p className="text-[11px] text-stone-400">Leyenda sin equipo · ranking, jugadores y torneos</p>
+                    </div>
+                  )}
                 </div>
               </div>
-              <Button size="sm" onClick={() => ctx.openCreate()}>
-                <Plus className="h-4 w-4" /> <span className="hidden sm:inline">Agendar scrim</span>
-              </Button>
+              {canAct && (
+                <Button size="sm" onClick={() => ctx.openCreate()}>
+                  <Plus className="h-4 w-4" /> <span className="hidden sm:inline">Agendar scrim</span>
+                </Button>
+              )}
             </header>
             <main className="mx-auto w-full max-w-7xl flex-1 px-4 py-6 sm:px-6 lg:py-8">{children}</main>
           </div>
@@ -128,7 +145,8 @@ export function AppShell({ user, children }: { user: ShellUser; children: React.
 function Sidebar({ user, onNavigate }: { user: ShellUser; onNavigate?: () => void }) {
   const pathname = usePathname();
   const router = useRouter();
-  const { data } = useSWR<{ scrims: ScrimDTO[] }>("/api/scrims?scope=requests", { refreshInterval: 30_000 });
+  const canAct = Boolean(user.team) && user.role !== "LEGEND";
+  const { data } = useSWR<{ scrims: ScrimDTO[] }>(canAct ? "/api/scrims?scope=requests" : null, { refreshInterval: 30_000 });
   const awaiting = (data?.scrims ?? []).filter(
     (s) => (s.status === "PENDING" && !s.isHost && !s.proposal) || (s.proposal && !s.proposal.byMe),
   ).length;
@@ -148,7 +166,7 @@ function Sidebar({ user, onNavigate }: { user: ShellUser; onNavigate?: () => voi
       </div>
       <div className="divider-gold mx-5 mb-4 w-auto" />
       <nav className="flex-1 space-y-1 px-3">
-        {NAV.map((item) => {
+        {NAV.filter((item) => (!item.team || user.team) && (!item.staff || canAct)).map((item) => {
           const active = pathname.startsWith(item.href);
           const Icon = item.icon;
           return (

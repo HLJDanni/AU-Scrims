@@ -1,10 +1,12 @@
+import { requirePageUser } from "@/lib/auth";
 import type { Metadata } from "next";
 import { PageHeader } from "@/components/ui/misc";
 import { ScrimCalendar } from "@/components/calendar/scrim-calendar";
 
 export const metadata: Metadata = { title: "Calendario" };
 
-export default function CalendarPage() {
+export default async function CalendarPage() {
+  await requirePageUser();
   return (
     <>
       <PageHeader

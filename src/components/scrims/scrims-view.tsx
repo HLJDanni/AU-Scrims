@@ -29,18 +29,20 @@ export function ScrimsView() {
   const history = useSWR<{ scrims: ScrimDTO[] }>(tab === "history" ? "/api/scrims?scope=history" : null);
 
   const incoming = (requests.data?.scrims ?? []).filter((s) => scrimState(s).awaitingMe || scrimState(s).proposalForMe).length;
-  const { openCreate } = useShell();
+  const { openCreate, canAct } = useShell();
 
   return (
     <>
       <PageHeader
         eyebrow="Gestión de scrims"
         title="Scrims del equipo"
-        description="Solo el staff (coach, analista y capitán) de tu equipo ve esta información."
+        description={canAct ? "Solo el staff (coach, analista y capitán) de tu equipo ve esta información." : "Vista de Leyenda: consultas los scrims de tu equipo sin poder modificarlos."}
         actions={
-          <Button onClick={() => openCreate()}>
-            <Plus className="h-4 w-4" /> Agendar scrim
-          </Button>
+          canAct ? (
+            <Button onClick={() => openCreate()}>
+              <Plus className="h-4 w-4" /> Agendar scrim
+            </Button>
+          ) : undefined
         }
       />
       <Tabs<Tab>
@@ -83,7 +85,7 @@ function groupByDay(list: ScrimDTO[]) {
 }
 
 function Upcoming({ list }: { list?: ScrimDTO[] }) {
-  const { openCreate } = useShell();
+  const { openCreate, canAct } = useShell();
   if (!list) return <Loading />;
   if (!list.length)
     return (
@@ -91,7 +93,7 @@ function Upcoming({ list }: { list?: ScrimDTO[] }) {
         icon={<Swords className="h-6 w-6" />}
         title="No hay scrims confirmados"
         text="Agenda un scrim o revisa las solicitudes pendientes."
-        action={<Button onClick={() => openCreate()}>Agendar scrim</Button>}
+        action={canAct ? <Button onClick={() => openCreate()}>Agendar scrim</Button> : undefined}
       />
     );
   return (

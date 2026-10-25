@@ -1,11 +1,11 @@
 import { db } from "@/lib/db";
-import { fail, parseBody, withTeam } from "@/lib/api";
+import { fail, parseBody, withStaff } from "@/lib/api";
 import { resultSchema } from "@/lib/validators";
 import { loadOwnScrim, logEvent, scrimInclude, toDTO } from "@/lib/scrims";
 import { eloDelta } from "@/lib/elo";
 
 /** Registrar el resultado (juegos ganados por cada lado) y actualizar el ranking. */
-export const POST = withTeam<{ id: string }>(async ({ req, user, params }) => {
+export const POST = withStaff<{ id: string }>(async ({ req, user, params }) => {
   const body = await parseBody(req, resultSchema);
   const scrim = await loadOwnScrim(params.id, user.teamId);
   if (scrim.status !== "CONFIRMED") fail(400, "Solo se puede registrar el resultado de un scrim confirmado");

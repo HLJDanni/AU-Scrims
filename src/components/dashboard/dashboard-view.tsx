@@ -65,14 +65,15 @@ function Countdown({ target }: { target: string }) {
 
 export function DashboardView() {
   const { user, openCreate, openDetail } = useShell();
+  const team = user.team!; // la página redirige si no hay equipo
   const upcoming = useSWR<{ scrims: ScrimDTO[] }>("/api/scrims?scope=upcoming");
   const requests = useSWR<{ scrims: ScrimDTO[] }>("/api/scrims?scope=requests");
   const board = useSWR<{ teams: LeaderboardRow[] }>("/api/leaderboard");
 
   const next = upcoming.data?.scrims[0];
-  const me = board.data?.teams.find((t) => t.id === user.team.id);
+  const me = board.data?.teams.find((t) => t.id === team.id);
   const actionable = (requests.data?.scrims ?? []).filter((s) => scrimState(s).awaitingMe || scrimState(s).proposalForMe);
-  const tier = tierFor(me?.rating ?? user.team.rating);
+  const tier = tierFor(me?.rating ?? team.rating);
 
   return (
     <div className="space-y-8">
@@ -87,17 +88,17 @@ export function DashboardView() {
         <div className="pointer-events-none absolute -bottom-32 left-1/3 h-72 w-72 rounded-full bg-[radial-gradient(closest-side,rgba(10,200,185,.14),transparent)]" />
         <div className="relative grid gap-8 lg:grid-cols-[1fr_auto] lg:items-center">
           <div className="flex items-center gap-5">
-            <TeamEmblem team={user.team} size={84} className="animate-float" />
+            <TeamEmblem team={team} size={84} className="animate-float" />
             <div>
               <p className="text-[11px] font-semibold uppercase tracking-[0.3em] text-hex-200">Bienvenido, {user.username}</p>
-              <h1 className="mt-1 font-display text-3xl font-bold tracking-wide text-gold-50 sm:text-4xl">{user.team.name}</h1>
+              <h1 className="mt-1 font-display text-3xl font-bold tracking-wide text-gold-50 sm:text-4xl">{team.name}</h1>
               <p className="mt-2 flex flex-wrap items-center gap-3 text-sm text-stone-300">
                 <span className="flex items-center gap-1.5 font-semibold" style={{ color: tier.color }}>
                   <RankIcon tier={tier.icon} size={26} />
                   {tier.name}
                 </span>
                 <span>·</span>
-                <span>{me?.rating ?? user.team.rating} pts</span>
+                <span>{me?.rating ?? team.rating} pts</span>
                 {me && (
                   <>
                     <span>·</span>
@@ -147,7 +148,7 @@ export function DashboardView() {
 
       {/* Stats */}
       <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
-        <StatCard label="Rating" value={me?.rating ?? user.team.rating} hint={me ? `Puesto #${me.rank} de ${board.data!.teams.length}` : "—"} icon={<Trophy className="h-4 w-4" />} />
+        <StatCard label="Rating" value={me?.rating ?? team.rating} hint={me ? `Puesto #${me.rank} de ${board.data!.teams.length}` : "—"} icon={<Trophy className="h-4 w-4" />} />
         <StatCard label="Win rate" value={`${me?.winRate ?? 0}%`} hint={me ? `${me.gamesWon}V - ${me.gamesLost}D en juegos` : "—"} icon={<TrendingUp className="h-4 w-4" />} accent="hex" delay={0.05} />
         <StatCard label="Confirmados" value={upcoming.data?.scrims.length ?? "–"} hint="Scrims por jugar" icon={<CalendarDays className="h-4 w-4" />} delay={0.1} />
         <StatCard label="Por responder" value={actionable.length} hint="Solicitudes y re-agendas" icon={<Inbox className="h-4 w-4" />} accent="hex" delay={0.15} />
@@ -188,7 +189,7 @@ export function DashboardView() {
                 initial={{ opacity: 0, x: 12 }}
                 animate={{ opacity: 1, x: 0 }}
                 transition={{ delay: 0.1 + i * 0.05 }}
-                className={cn("flex items-center gap-3 px-4 py-3", t.id === user.team.id && "bg-hex-500/25")}
+                className={cn("flex items-center gap-3 px-4 py-3", t.id === team.id && "bg-hex-500/25")}
               >
                 <span className={cn("w-6 font-display text-lg font-bold", i === 0 ? "text-gold-300" : "text-stone-300")}>{t.rank}</span>
                 <TeamEmblem team={t} size={34} />

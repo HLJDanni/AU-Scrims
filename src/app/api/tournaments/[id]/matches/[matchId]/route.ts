@@ -1,5 +1,5 @@
 import { db } from "@/lib/db";
-import { fail, parseBody, withTeam } from "@/lib/api";
+import { fail, parseBody, withStaff } from "@/lib/api";
 import { matchResultSchema } from "@/lib/validators";
 import { advanceTournament, applyResult } from "@/lib/tournaments";
 
@@ -7,7 +7,7 @@ import { advanceTournament, applyResult } from "@/lib/tournaments";
  * Registrar el resultado de un partido (staff de cualquiera de los dos equipos, o el coach organizador).
  * Al completarse la ronda se empareja automáticamente la siguiente.
  */
-export const POST = withTeam<{ id: string; matchId: string }>(async ({ req, user, params }) => {
+export const POST = withStaff<{ id: string; matchId: string }>(async ({ req, user, params }) => {
   const { scoreA, scoreB } = await parseBody(req, matchResultSchema);
   const m = await db.tournamentMatch.findUnique({ where: { id: params.matchId }, include: { tournament: true } });
   if (!m || m.tournamentId !== params.id) fail(404, "Partido no encontrado");

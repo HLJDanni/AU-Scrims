@@ -15,7 +15,8 @@
     "test:blackbox": "vitest run tests/blackbox",
     "test:integration": "vitest run tests/integration",
     "test:e2e": "playwright test",
-    "simulate:tournaments": "node scripts/simulate-tournaments.mjs"
+    "simulate:tournaments": "node scripts/simulate-tournaments.mjs",
+    "simulate:players": "node scripts/simulate-player-stats.mjs"
   },
   "prisma": {
     "seed": "node prisma/seed.mjs"

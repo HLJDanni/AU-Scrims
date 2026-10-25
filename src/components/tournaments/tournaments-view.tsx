@@ -18,12 +18,12 @@ import { TournamentBoard } from "./tournament-board";
 import { STATUS_LABEL, type TeamEligibility, type TournamentSummary } from "./types";
 
 type Tab = Division | "REQUIREMENTS";
-type ListResponse = { tournaments: TournamentSummary[]; eligibility: TeamEligibility };
+type ListResponse = { tournaments: TournamentSummary[]; eligibility: TeamEligibility | null };
 
 export function TournamentsView() {
   const { data, mutate } = useSWR<ListResponse>("/api/tournaments");
   const [tab, setTab] = useState<Tab | null>(null);
-  const current: Tab = tab ?? data?.eligibility.division ?? "ELITE";
+  const current: Tab = tab ?? data?.eligibility?.division ?? "ELITE";
 
   return (
     <>
@@ -61,7 +61,7 @@ function DivisionPanel({ division, data, onChanged }: { division: Division; data
   const open = list.find((t) => t.status !== "FINISHED");
   const past = list.filter((t) => t.status === "FINISHED");
   const mine = data.eligibility;
-  const belongs = mine.division === division;
+  const belongs = Boolean(mine) && mine!.division === division;
 
   return (
     <div className="space-y-6">
@@ -84,11 +84,13 @@ function DivisionPanel({ division, data, onChanged }: { division: Division; data
           )}
         >
           {belongs ? <CheckCircle2 className="h-4 w-4 text-win" /> : <XCircle className="h-4 w-4 text-stone-400" />}
-          {belongs
-            ? `${user.team.name} juega en esta división`
-            : mine.division
-              ? `${user.team.name} pertenece a la ${DIVISIONS[mine.division].name}`
-              : `${user.team.name} aún no cumple los requisitos`}
+          {!mine || !user.team
+            ? "Vista de espectador: puedes seguir los torneos de ambas divisiones"
+            : belongs
+              ? `${user.team.name} juega en esta división`
+              : mine.division
+                ? `${user.team.name} pertenece a la ${DIVISIONS[mine.division].name}`
+                : `${user.team.name} aún no cumple los requisitos`}
         </div>
       </div>
 
@@ -186,10 +188,11 @@ function CreateModal({ open, onClose, onCreated, division }: { open: boolean; on
   );
 }
 
-function Requirements({ mine }: { mine: TeamEligibility }) {
+function Requirements({ mine }: { mine: TeamEligibility | null }) {
   const { data } = useSWR<{ teams: TeamEligibility[] }>("/api/tournaments/eligibility");
   return (
-    <div className="grid gap-6 xl:grid-cols-[380px_1fr]">
+    <div className={cn("grid gap-6", mine && "xl:grid-cols-[380px_1fr]")}>
+      {mine && (
       <div className="hex-panel h-fit p-5">
         <div className="mb-4 flex items-center gap-3">
           <TeamEmblem team={mine.team} size={42} />
@@ -212,6 +215,7 @@ function Requirements({ mine }: { mine: TeamEligibility }) {
           ))}
         </ul>
       </div>
+      )}
 
       <div className="hex-panel overflow-hidden">
         <p className="border-b border-void-500/60 p-4 font-display text-sm font-semibold uppercase tracking-widest text-gold-200">Todos los equipos</p>

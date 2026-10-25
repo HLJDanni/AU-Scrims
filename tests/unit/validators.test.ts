@@ -46,5 +46,9 @@ describe("Unitarias · validación de entrada", () => {
     expect(registerSchema.safeParse({ ...base, role: "PLAYER", mode: "join", inviteCode: "ABCD2345" }).success).toBe(false);
     expect(registerSchema.safeParse({ ...base, mode: "create" }).success).toBe(false); // falta el equipo
     expect(registerSchema.safeParse({ ...base, mode: "join" }).success).toBe(false); // falta el código
+    // Leyenda: puede entrar sin equipo, pero no crear uno; el staff no puede quedar sin equipo
+    expect(registerSchema.safeParse({ ...base, role: "LEGEND", mode: "none" }).success).toBe(true);
+    expect(registerSchema.safeParse({ ...base, role: "LEGEND", mode: "create", team: { name: "Equipo Test", tag: "tst" } }).success).toBe(false);
+    expect(registerSchema.safeParse({ ...base, mode: "none" }).success).toBe(false);
   });
 });

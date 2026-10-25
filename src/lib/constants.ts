@@ -1,10 +1,15 @@
-export type Role = "COACH" | "ANALYST" | "CAPTAIN";
+export type Role = "COACH" | "ANALYST" | "CAPTAIN" | "LEGEND";
+
+/** Coach, analista y capitán gestionan; la Leyenda solo consulta. */
+export const STAFF_ROLES: Role[] = ["COACH", "ANALYST", "CAPTAIN"];
+export const isStaff = (role: string) => (STAFF_ROLES as string[]).includes(role);
 export type ScrimStatus = "PENDING" | "CONFIRMED" | "DECLINED" | "CANCELLED" | "COMPLETED";
 
 export const ROLE_META: Record<Role, { label: string; short: string; description: string }> = {
   COACH: { label: "Coach", short: "COA", description: "Dirige al equipo y administra el roster" },
   ANALYST: { label: "Analista", short: "ANA", description: "Revisa partidas, drafts y estadísticas" },
   CAPTAIN: { label: "Capitán", short: "CAP", description: "Líder dentro del juego y voz del equipo" },
+  LEGEND: { label: "Leyenda", short: "LEY", description: "Ve el ranking y los torneos; con equipo, solo los datos de su equipo" },
 };
 
 export const STATUS_META: Record<ScrimStatus, { label: string; color: string; bg: string }> = {

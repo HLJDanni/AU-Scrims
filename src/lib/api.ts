@@ -60,6 +60,14 @@ export function withTeam<C = Record<string, string>>(handler: (ctx: { req: Reque
   });
 }
 
+/** Exige equipo y un rol de staff (coach, analista o capitán): la Leyenda es de solo lectura. */
+export function withStaff<C = Record<string, string>>(handler: (ctx: { req: Request; user: TeamUser; params: C }) => Promise<unknown>) {
+  return withTeam<C>(async (ctx) => {
+    if (ctx.user.role === "LEGEND") fail(403, "Las Leyendas solo pueden consultar información");
+    return handler(ctx);
+  });
+}
+
 /** Handler público (sin sesión) con el mismo manejo de errores. */
 export function publicRoute(handler: (req: Request) => Promise<unknown>) {
   return async (req: Request) => {

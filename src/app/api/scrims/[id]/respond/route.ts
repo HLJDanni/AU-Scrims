@@ -1,10 +1,10 @@
 import { db } from "@/lib/db";
-import { fail, parseBody, withTeam } from "@/lib/api";
+import { fail, parseBody, withStaff } from "@/lib/api";
 import { respondSchema } from "@/lib/validators";
 import { assertNoOverlap, loadOwnScrim, logEvent, scrimInclude, toDTO } from "@/lib/scrims";
 
 /** El equipo invitado acepta o rechaza la solicitud. */
-export const POST = withTeam<{ id: string }>(async ({ req, user, params }) => {
+export const POST = withStaff<{ id: string }>(async ({ req, user, params }) => {
   const { action } = await parseBody(req, respondSchema);
   const scrim = await loadOwnScrim(params.id, user.teamId);
   if (scrim.status !== "PENDING") fail(400, "La solicitud ya fue respondida");

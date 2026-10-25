@@ -19,7 +19,7 @@ export const POST = publicRoute(async (req) => {
   const passwordHash = await bcrypt.hash(body.password, 12);
 
   const user = await db.$transaction(async (tx) => {
-    let teamId: string;
+    let teamId: string | null = null;
     if (body.mode === "create") {
       const t = body.team!;
       const dup = await tx.team.findFirst({
@@ -28,7 +28,7 @@ export const POST = publicRoute(async (req) => {
       if (dup) fail(409, "Ya existe un equipo con ese nombre o tag");
       const team = await tx.team.create({ data: { ...t, inviteCode: generateInviteCode() } });
       teamId = team.id;
-    } else {
+    } else if (body.mode === "join") {
       const team = await tx.team.findUnique({ where: { inviteCode: body.inviteCode! } });
       if (!team) fail(404, "Código de invitación inválido");
       teamId = team!.id;

@@ -1,6 +1,6 @@
 import type { Prisma } from "@prisma/client";
 import { db } from "@/lib/db";
-import { fail, parseBody, withTeam } from "@/lib/api";
+import { fail, parseBody, withTeam, withStaff } from "@/lib/api";
 import { createScrimSchema } from "@/lib/validators";
 import { assertNoOverlap, logEvent, scrimInclude, toDTO } from "@/lib/scrims";
 
@@ -58,7 +58,7 @@ export const GET = withTeam(async ({ req, user }) => {
 });
 
 /** Agendar un scrim nuevo (solicitud al equipo rival). */
-export const POST = withTeam(async ({ req, user }) => {
+export const POST = withStaff(async ({ req, user }) => {
   const body = await parseBody(req, createScrimSchema);
   if (body.opponentTeamId === user.teamId) fail(400, "No puedes agendar contra tu propio equipo");
   const opponent = await db.team.findUnique({ where: { id: body.opponentTeamId } });

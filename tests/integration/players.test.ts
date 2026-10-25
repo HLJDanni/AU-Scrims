@@ -72,15 +72,25 @@ describe("Integración · roster de jugadores", () => {
     expect(edited.status).toBe(200);
     expect(edited.body.player).toMatchObject({ riotId: `QaRenamed#${tag}`, position: "SUB", tier: null });
 
-    // Otro equipo no puede editarlo, pero sí ve el perfil con descripción y ELO promedio
+    // Otro equipo no puede editarlo; ve descripción y ELO promedio, pero el roster es privado salvo scrim mutuo
     expect((await other.req("DELETE", `/api/team/players/${created.body.player.id}`)).status).toBe(404);
     const profile = await other.get(`/api/teams/${shrId}/profile`);
     expect(profile.status).toBe(200);
     expect(profile.body.team.tag).toBe("SHR");
-    expect(profile.body.players.some((p: { riotId: string }) => p.riotId === `QaRenamed#${tag}`)).toBe(true);
     expect(profile.body.rankSync).toBe(false);
     expect(profile.body.eloAverage.label).toEqual(expect.any(String));
-    expect(profile.body.players[0]).not.toHaveProperty("teamId");
+    const hxwId = await teamId(other, "HXW");
+    const mutual = await db.scrim.count({
+      where: { status: { in: ["PENDING", "CONFIRMED", "COMPLETED"] }, OR: [{ requesterTeamId: hxwId, opponentTeamId: shrId }, { requesterTeamId: shrId, opponentTeamId: hxwId }] },
+    });
+    if (mutual) {
+      expect(profile.body.rosterHidden).toBeNull();
+      expect(profile.body.players.some((p: { riotId: string }) => p.riotId === `QaRenamed#${tag}`)).toBe(true);
+      expect(profile.body.players[0]).not.toHaveProperty("teamId");
+    } else {
+      expect(profile.body.players).toEqual([]);
+      expect(profile.body.rosterHidden).toMatch(/scrim agendado/);
+    }
 
     // Quitar
     expect((await cap.req("DELETE", `/api/team/players/${created.body.player.id}`)).status).toBe(200);

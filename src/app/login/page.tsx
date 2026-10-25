@@ -20,9 +20,12 @@ function LoginForm() {
     e.preventDefault();
     setLoading(true);
     try {
-      const res = await api<{ hasTeam: boolean }>("/api/auth/login", { body: { identifier, password } });
+      const res = await api<{ hasTeam: boolean; role: string }>("/api/auth/login", { body: { identifier, password } });
       const next = params.get("next");
-      router.replace(!res.hasTeam ? "/onboarding" : next?.startsWith("/") && !next.startsWith("//") ? next : "/dashboard");
+      const safeNext = next?.startsWith("/") && !next.startsWith("//") ? next : null;
+      // La Leyenda sin equipo entra como espectadora; el staff sin equipo pasa por el onboarding
+      if (!res.hasTeam) router.replace(res.role === "LEGEND" ? "/leaderboard" : "/onboarding");
+      else router.replace(safeNext ?? (res.role === "LEGEND" ? "/scrims" : "/dashboard"));
       router.refresh();
     } catch (err) {
       toast.error((err as Error).message);

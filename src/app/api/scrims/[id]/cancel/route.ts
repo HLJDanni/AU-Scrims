@@ -1,8 +1,8 @@
 import { db } from "@/lib/db";
-import { fail, withTeam } from "@/lib/api";
+import { fail, withStaff } from "@/lib/api";
 import { loadOwnScrim, logEvent, scrimInclude, toDTO } from "@/lib/scrims";
 
-export const POST = withTeam<{ id: string }>(async ({ user, params }) => {
+export const POST = withStaff<{ id: string }>(async ({ user, params }) => {
   const scrim = await loadOwnScrim(params.id, user.teamId);
   if (scrim.status !== "PENDING" && scrim.status !== "CONFIRMED") fail(400, "Este scrim ya no está activo");
 

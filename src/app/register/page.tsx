@@ -2,7 +2,7 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { AnimatePresence, motion } from "framer-motion";
-import { BarChart3, Crown, KeyRound, Megaphone, PlusCircle } from "lucide-react";
+import { BarChart3, Crown, KeyRound, Megaphone, PlusCircle, Sparkles } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
 import { api, cn } from "@/lib/client";
@@ -15,6 +15,7 @@ const ROLE_ICONS: Record<Role, React.ReactNode> = {
   COACH: <Crown className="h-5 w-5" />,
   ANALYST: <BarChart3 className="h-5 w-5" />,
   CAPTAIN: <Megaphone className="h-5 w-5" />,
+  LEGEND: <Sparkles className="h-5 w-5" />,
 };
 
 export default function RegisterPage() {
@@ -22,7 +23,17 @@ export default function RegisterPage() {
   const [step, setStep] = useState<1 | 2>(1);
   const [account, setAccount] = useState({ username: "", email: "", password: "" });
   const [role, setRole] = useState<Role>("COACH");
-  const [mode, setMode] = useState<"create" | "join">("create");
+  const [mode, setMode] = useState<"create" | "join" | "none">("create");
+  const legend = role === "LEGEND";
+  const modes = legend
+    ? [
+        { id: "join" as const, label: "Unirme con código", icon: <KeyRound className="h-5 w-5" /> },
+        { id: "none" as const, label: "Sin equipo", icon: <Sparkles className="h-5 w-5" /> },
+      ]
+    : [
+        { id: "create" as const, label: "Crear equipo", icon: <PlusCircle className="h-5 w-5" /> },
+        { id: "join" as const, label: "Unirme con código", icon: <KeyRound className="h-5 w-5" /> },
+      ];
   const [team, setTeam] = useState(emptyTeam);
   const [inviteCode, setInviteCode] = useState("");
   const [loading, setLoading] = useState(false);
@@ -86,14 +97,17 @@ export default function RegisterPage() {
               </div>
               <div>
                 <label className="label">Rol en el equipo</label>
-                <div className="grid gap-3 sm:grid-cols-3">
+                <div className="grid gap-3 sm:grid-cols-2">
                   {(Object.keys(ROLE_META) as Role[]).map((r) => (
                     <motion.button
                       type="button"
                       key={r}
                       whileHover={{ y: -2 }}
                       whileTap={{ scale: 0.98 }}
-                      onClick={() => setRole(r)}
+                      onClick={() => {
+                        setRole(r);
+                        setMode(r === "LEGEND" ? "none" : "create");
+                      }}
                       className={cn(
                         "relative rounded-md border p-4 text-left transition-colors",
                         role === r ? "border-gold-200 bg-gold-200/10 shadow-gold" : "border-void-500 bg-void-950/50 hover:border-gold-500",
@@ -113,10 +127,7 @@ export default function RegisterPage() {
           ) : (
             <motion.div key="s2" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: 20 }} className="space-y-5">
               <div className="grid grid-cols-2 gap-3">
-                {[
-                  { id: "create" as const, label: "Crear equipo", icon: <PlusCircle className="h-5 w-5" /> },
-                  { id: "join" as const, label: "Unirme con código", icon: <KeyRound className="h-5 w-5" /> },
-                ].map((m) => (
+                {modes.map((m) => (
                   <button
                     type="button"
                     key={m.id}
@@ -131,7 +142,14 @@ export default function RegisterPage() {
                 ))}
               </div>
               <AnimatePresence mode="wait">
-                {mode === "create" ? (
+                {mode === "none" ? (
+                  <motion.div key="none" initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: "auto" }} exit={{ opacity: 0, height: 0 }}>
+                    <p className="rounded-md border border-[#B57BFF]/40 bg-[#B57BFF]/10 p-4 text-sm text-stone-300">
+                      Como Leyenda sin equipo podrás ver el ranking de equipos, el ranking de jugadores y los torneos. Si luego te unes a un equipo, verás también
+                      sus scrims y su roster, siempre en modo de solo lectura.
+                    </p>
+                  </motion.div>
+                ) : mode === "create" ? (
                   <motion.div key="create" initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: "auto" }} exit={{ opacity: 0, height: 0 }}>
                     <TeamFields value={team} onChange={setTeam} />
                   </motion.div>

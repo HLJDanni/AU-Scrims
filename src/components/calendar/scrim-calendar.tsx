@@ -30,7 +30,7 @@ const VIEWS = [
 ];
 
 export function ScrimCalendar() {
-  const { openCreate, openDetail } = useShell();
+  const { openCreate, openDetail, canAct } = useShell();
   const ref = useRef<FullCalendar>(null);
   const [view, setView] = useState<View>("timeGridWeek");
   const [title, setTitle] = useState("");
@@ -49,7 +49,7 @@ export function ScrimCalendar() {
         title: `vs ${s.opponent.tag}`,
         start: s.startAt,
         end: s.endAt,
-        editable: st.canReschedule,
+        editable: canAct && st.canReschedule,
         backgroundColor: s.status === "CONFIRMED" ? "rgba(10,200,185,.22)" : s.status === "PENDING" ? "rgba(200,155,60,.20)" : "rgba(160,155,140,.16)",
         borderColor: meta.color,
         textColor: "#F0E6D2",
@@ -132,9 +132,11 @@ export function ScrimCalendar() {
             }}
             className="border-b-0"
           />
-          <Button size="sm" onClick={() => openCreate()} className="hidden sm:inline-flex">
-            <Plus className="h-4 w-4" /> Nuevo
-          </Button>
+          {canAct && (
+            <Button size="sm" onClick={() => openCreate()} className="hidden sm:inline-flex">
+              <Plus className="h-4 w-4" /> Nuevo
+            </Button>
+          )}
         </div>
       </div>
 
@@ -143,7 +145,9 @@ export function ScrimCalendar() {
         <Legend color={STATUS_META.PENDING.color} label="Pendiente" dashed />
         <Legend color="#0AC8B9" label="Propuesta de re-agenda" dashed faded />
         <Legend color={STATUS_META.COMPLETED.color} label="Finalizado" />
-        <span className="ml-auto hidden text-stone-400 md:inline">Arrastra en el calendario para agendar · arrastra un scrim para re-agendarlo</span>
+        <span className="ml-auto hidden text-stone-400 md:inline">
+          {canAct ? "Arrastra en el calendario para agendar · arrastra un scrim para re-agendarlo" : "Vista de solo lectura"}
+        </span>
       </div>
 
       <div className={cn("transition-opacity duration-300", isLoading && !data ? "opacity-50" : "opacity-100")}>
@@ -163,7 +167,7 @@ export function ScrimCalendar() {
           slotLabelFormat={{ hour: "2-digit", minute: "2-digit", hour12: false }}
           eventTimeFormat={{ hour: "2-digit", minute: "2-digit", hour12: false }}
           dayMaxEvents={3}
-          selectable
+          selectable={canAct}
           selectMirror
           selectAllow={(sel) => sel.start.getTime() > Date.now() - 15 * 60000}
           select={(sel) => {

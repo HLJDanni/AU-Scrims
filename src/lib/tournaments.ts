@@ -133,7 +133,7 @@ export async function applyResult(tx: Tx, tournamentId: string, winnerId: string
 type TeamLite = Pick<Team, "id" | "name" | "tag" | "color" | "region" | "rating">;
 
 /** Detalle completo de un torneo desde la perspectiva de un equipo. */
-export async function tournamentDetail(id: string, viewer: { teamId: string; role: string }) {
+export async function tournamentDetail(id: string, viewer: { teamId: string | null; role: string }) {
   const t = await db.tournament.findUnique({
     where: { id },
     include: {
@@ -167,15 +167,16 @@ export async function tournamentDetail(id: string, viewer: { teamId: string; rol
   const myEntry = tour.entries.find((e) => e.teamId === viewer.teamId);
   const isOrganizer = tour.organizerTeamId === viewer.teamId;
   const isCoach = viewer.role === "COACH";
-  const canEnroll = viewer.role === "COACH" || viewer.role === "CAPTAIN";
+  const canEnroll = Boolean(viewer.teamId) && (viewer.role === "COACH" || viewer.role === "CAPTAIN");
 
   let joinBlocked: string | null = null;
   if (tour.status !== "REGISTRATION") joinBlocked = "Las inscripciones están cerradas";
   else if (myEntry) joinBlocked = null;
-  else if (!canEnroll) joinBlocked = "Solo el coach o el capitán pueden inscribir al equipo";
+  else if (!viewer.teamId) joinBlocked = "Vista de espectador: solo los equipos pueden inscribirse";
+  else if (!canEnroll) joinBlocked = viewer.role === "LEGEND" ? "Vista de espectador: las Leyendas no inscriben equipos" : "Solo el coach o el capitán pueden inscribir al equipo";
   else if (tour.entries.length >= 16) joinBlocked = "El torneo está lleno";
   else {
-    const e = await eligibilityOf(viewer.teamId);
+    const e = await eligibilityOf(viewer.teamId!);
     if (e.division !== tour.division) joinBlocked = e.division ? "Tu equipo pertenece a la otra división" : "Tu equipo no cumple los requisitos";
   }
 
@@ -185,7 +186,7 @@ export async function tournamentDetail(id: string, viewer: { teamId: string; rol
       .filter((m) => m.round === round)
       .map((m) => {
         const swiss = swissMatches.find((s) => s.round === m.round && s.teamAId === m.teamAId && s.teamBId === m.teamBId)!;
-        const participant = viewer.teamId === m.teamAId || viewer.teamId === m.teamBId;
+        const participant = viewer.role !== "LEGEND" && Boolean(viewer.teamId) && (viewer.teamId === m.teamAId || viewer.teamId === m.teamBId);
         return {
           id: m.id,
           teamA: m.teamA,

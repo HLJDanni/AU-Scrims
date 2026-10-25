@@ -22,5 +22,5 @@ export const POST = publicRoute(async (req) => {
   if (!user || !ok) fail(401, "Usuario o contraseña incorrectos");
 
   await createSession({ sub: user!.id, role: user!.role });
-  return { ok: true, hasTeam: Boolean(user!.teamId) };
+  return { ok: true, hasTeam: Boolean(user!.teamId), role: user!.role };
 });

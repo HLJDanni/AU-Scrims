@@ -98,3 +98,36 @@ export async function fetchRankedProfile(region: string, gameName: string, tagLi
 export function riotHttpStatus(e: RiotError) {
   return { not_found: 422, auth: 503, rate_limit: 429, unavailable: 502 }[e.kind];
 }
+
+// MATCH-V5 usa clústeres regionales (OCE va a "sea")
+const MATCH_REGIONAL: Record<string, string> = { LAN: "americas", LAS: "americas", NA: "americas", BR: "americas", OCE: "sea", EUW: "europe", EUNE: "europe", KR: "asia" };
+const RANKED_SOLO_QUEUE = 420;
+
+export type RankedMatch = { matchId: string; kills: number; deaths: number; assists: number; win: boolean; playedAt: Date };
+
+type MatchDTO = {
+  metadata: { matchId: string };
+  info: { gameEndTimestamp?: number; gameCreation: number; participants: { puuid: string; kills: number; deaths: number; assists: number; win: boolean }[] };
+};
+
+/**
+ * Partidas recientes de SoloQ de un jugador. Solo descarga el detalle de las que aún no conocemos
+ * (`known`) y como máximo `maxNew` por llamada, para cuidar el límite de la API.
+ */
+export async function fetchRecentRankedMatches(region: string, puuid: string, known: Set<string>, { count = 20, maxNew = 5 } = {}): Promise<RankedMatch[]> {
+  if (!riotEnabled()) throw new RiotError("auth", "Falta configurar RIOT_API_KEY");
+  const regional = MATCH_REGIONAL[region];
+  if (!regional) throw new RiotError("unavailable", `Región ${region} no soportada por la API de Riot`);
+  const ids = await call<string[]>(
+    `https://${regional}.api.riotgames.com/lol/match/v5/matches/by-puuid/${puuid}/ids?queue=${RANKED_SOLO_QUEUE}&type=ranked&start=0&count=${count}`,
+  );
+  const pending = ids.filter((id) => !known.has(id)).slice(0, maxNew);
+  const out: RankedMatch[] = [];
+  for (const id of pending) {
+    const m = await call<MatchDTO>(`https://${regional}.api.riotgames.com/lol/match/v5/matches/${id}`);
+    const p = m.info.participants.find((x) => x.puuid === puuid);
+    if (!p) continue;
+    out.push({ matchId: m.metadata.matchId, kills: p.kills, deaths: p.deaths, assists: p.assists, win: p.win, playedAt: new Date(m.info.gameEndTimestamp ?? m.info.gameCreation) });
+  }
+  return out;
+}

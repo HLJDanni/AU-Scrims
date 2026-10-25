@@ -1,8 +1,8 @@
 import { db } from "@/lib/db";
-import { fail, withTeam } from "@/lib/api";
+import { fail, withTeam, withUser } from "@/lib/api";
 import { tournamentDetail } from "@/lib/tournaments";
 
-export const GET = withTeam<{ id: string }>(async ({ user, params }) => tournamentDetail(params.id, { teamId: user.teamId, role: user.role }));
+export const GET = withUser<{ id: string }>(async ({ user, params }) => tournamentDetail(params.id, { teamId: user.teamId, role: user.role }));
 
 /** Cancelar un torneo que aún no empezó (coach del equipo organizador). */
 export const DELETE = withTeam<{ id: string }>(async ({ user, params }) => {

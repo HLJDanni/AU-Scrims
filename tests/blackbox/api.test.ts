@@ -62,6 +62,10 @@ describe("Caja negra · API REST", () => {
       expect(r.status, page).toBe(307);
       expect(r.headers.get("location")).toContain("/login");
     }
+    // /logout redirige de forma relativa (antes apuntaba a la dirección interna http://0.0.0.0:3000)
+    const out = await anon.get("/logout");
+    expect(out.status).toBe(307);
+    expect(out.headers.get("location")).toBe("/login");
     const csrf = await shr.req("POST", "/api/scrims", { opponentTeamId: dmcId, ...farSlot() }, { Origin: "https://evil.example" });
     expect(csrf.status).toBe(403);
     // Solo el coach administra el equipo

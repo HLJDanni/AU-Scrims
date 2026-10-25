@@ -138,13 +138,13 @@ function Row({ icon, label, children }: { icon: React.ReactNode; label: string; 
 }
 
 function DetailsTab({ scrim, onChanged }: { scrim: ScrimDTO; onChanged: () => void }) {
-  const { openReschedule } = useShell();
+  const { openReschedule, canAct } = useShell();
   const st = scrimState(scrim);
   const a = useScrimActions(onChanged);
 
   return (
     <div className="space-y-5">
-      {st.proposalForMe && scrim.proposal && (
+      {canAct && st.proposalForMe && scrim.proposal && (
         <motion.div initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} className="rounded-md border border-hex-200/50 bg-hex-500/30 p-4">
           <p className="flex items-center gap-2 text-sm font-semibold text-hex-100">
             <Repeat2 className="h-4 w-4" /> [{scrim.opponent.tag}] propone un nuevo horario
@@ -165,7 +165,7 @@ function DetailsTab({ scrim, onChanged }: { scrim: ScrimDTO; onChanged: () => vo
           </div>
         </motion.div>
       )}
-      {st.proposalByMe && scrim.proposal && (
+      {canAct && st.proposalByMe && scrim.proposal && (
         <div className="rounded-md border border-gold-300/40 bg-gold-700/20 p-4 text-sm">
           <p className="font-semibold text-gold-100">Esperando que [{scrim.opponent.tag}] apruebe tu propuesta</p>
           <p className="mt-1 text-stone-300">{fmtFull(scrim.proposal.startAt, scrim.proposal.endAt)} · {scrim.proposal.games} juegos</p>
@@ -199,8 +199,9 @@ function DetailsTab({ scrim, onChanged }: { scrim: ScrimDTO; onChanged: () => vo
         <TeamProfileCard teamId={scrim.myTeam.id} label="Tu equipo" />
       </section>
 
-      {st.canReport && <ResultForm scrim={scrim} busy={a.busy === "report"} onSubmit={(m, o) => a.report(scrim, m, o)} />}
+      {canAct && st.canReport && <ResultForm scrim={scrim} busy={a.busy === "report"} onSubmit={(m, o) => a.report(scrim, m, o)} />}
 
+      {canAct && (
       <div className="flex flex-wrap gap-2">
         {st.awaitingMe && (
           <>
@@ -223,6 +224,7 @@ function DetailsTab({ scrim, onChanged }: { scrim: ScrimDTO; onChanged: () => vo
           </Button>
         )}
       </div>
+      )}
     </div>
   );
 }
@@ -268,9 +270,10 @@ function ResultForm({ scrim, busy, onSubmit }: { scrim: ScrimDTO; busy: boolean;
 }
 
 function RoomTab({ scrim, onSaved }: { scrim: ScrimDTO; onSaved: () => void }) {
+  const { canAct } = useShell();
   const [link, setLink] = useState(scrim.roomLink ?? "");
   const [saving, setSaving] = useState(false);
-  const editable = scrim.status === "PENDING" || scrim.status === "CONFIRMED";
+  const editable = canAct && (scrim.status === "PENDING" || scrim.status === "CONFIRMED");
   useEffect(() => setLink(scrim.roomLink ?? ""), [scrim.roomLink]);
 
   const invite = [

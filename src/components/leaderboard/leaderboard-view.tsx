@@ -124,7 +124,7 @@ function Form({ form }: { form: LeaderboardRow["form"] }) {
 }
 
 function RankTable({ teams, activity }: { teams: LeaderboardRow[]; activity?: boolean }) {
-  const { user, openCreate } = useShell();
+  const { user, openCreate, canAct } = useShell();
   const [q, setQ] = useState("");
   const rows = useMemo(() => {
     const t = q.trim().toLowerCase();
@@ -157,7 +157,7 @@ function RankTable({ teams, activity }: { teams: LeaderboardRow[]; activity?: bo
           </thead>
           <tbody>
             {rows.map((t, i) => {
-              const mine = t.id === user.team.id;
+              const mine = t.id === user.team?.id;
               return (
                 <motion.tr
                   key={t.id}
@@ -209,7 +209,7 @@ function RankTable({ teams, activity }: { teams: LeaderboardRow[]; activity?: bo
                     <Form form={t.form} />
                   </td>
                   <td className="px-4 py-3 text-right">
-                    {!mine && (
+                    {!mine && canAct && (
                       <Button
                         size="sm"
                         variant="ghost"

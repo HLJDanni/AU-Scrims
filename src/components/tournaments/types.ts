@@ -60,7 +60,7 @@ export type TournamentDetail = {
   }[];
   rounds: { round: number; matches: MatchDTO[] }[];
   me: {
-    teamId: string;
+    teamId: string | null;
     entered: boolean;
     isOrganizer: boolean;
     canJoin: boolean;
