@@ -1,6 +1,6 @@
 # Plan y resultados de pruebas · AU Scrims
 
-**Fecha de ejecución:** 24/10/2026 · **Entorno:** Docker local (app `:3000`, PostgreSQL `:5434`), datos demo · **Resultado global:** 18/18 pruebas automatizadas aprobadas
+**Fecha de ejecución:** 24/10/2026 · **Entorno:** Docker local (app `:3000`, PostgreSQL `:5434`), datos demo · **Resultado global:** 19/19 pruebas automatizadas aprobadas
 
 ## Cómo ejecutarlas
 
@@ -27,6 +27,7 @@ Las pruebas de caja negra, integración y E2E usan los usuarios demo y limpian l
 | Unitaria | U5 | `tests/unit/validators.test.ts` | Registro: contraseña segura, rol válido, equipo o código según el modo, normalización | ✅ |
 | Unitaria | U6 | `tests/unit/lol.test.ts` | Rangos de SoloQ: escala numérica e inversa, ELO promedio de titulares (ignora suplentes y sin rango), Riot ID y link de op.gg | ✅ |
 | Unitaria | U7 | `tests/unit/lol.test.ts` | Link de op.gg: acepta formatos actual, antiguo y con idioma; extrae región y Riot ID; normaliza; rechaza u.gg, rutas que no son perfiles, regiones desconocidas y links sin tag | ✅ |
+| Unitaria | U8 | `tests/unit/riot.test.ts` | Cliente de la API de Riot con respuestas simuladas: rango de SoloQ (ignora Flex), Maestro sin división, sin rango, enrutamiento LAN → `americas`/`la1`, clave en cabecera y errores 404/403/429 y sin clave | ✅ |
 | Caja blanca | W1 | `tests/whitebox/scrim-dto.test.ts` | `toDTO`: ramas anfitrión/invitado (marcador y delta invertidos), valores nulos | ✅ |
 | Caja blanca | W2 | `tests/whitebox/scrim-dto.test.ts` | `toDTO`: ramas de propuesta (ninguna, incompleta, propia, del rival, juegos por defecto) | ✅ |
 | Caja negra | N1 | `tests/blackbox/api.test.ts` | Login: 401 con mensaje genérico, cookie `httpOnly` + `SameSite=Lax`, `/me` sin hash | ✅ |
@@ -36,8 +37,8 @@ Las pruebas de caja negra, integración y E2E usan los usuarios demo y limpian l
 | Caja negra | N5 | `tests/blackbox/api.test.ts` | Un tercer equipo no ve, edita ni cancela el scrim (404) y no aparece en sus listas; ranking ordenado | ✅ |
 | Integración | I1 | `tests/integration/scrim-lifecycle.test.ts` | Agendar → aceptar → proponer → aprobar → link → jugar → resultado: estado en BD, Elo de ambos equipos, bitácora y ranking | ✅ |
 | Integración | I2 | `tests/integration/delete-team.test.ts` | Eliminar equipo: capitán 403, nombre incorrecto 422, coach 200; se borran equipo y scrims, el staff queda sin equipo y va a `/onboarding` | ✅ |
-| Integración | I3 | `tests/integration/players.test.ts` | Roster: link de op.gg obligatorio (sin link 422, otro sitio 422, otro servidor 422, se guarda normalizado), capitán agrega y edita, analista 403, titular duplicado 409, cuenta repetida 409, Riot ID inválido 422, Maestro sin división, el rival ve el perfil | ✅ |
-| End-to-end | E1 | `tests/e2e/schedule-flow.spec.ts` | En el navegador: login → agendar con 5 juegos y link → Enviadas → detalle → Sala → copiar invitación → Actividad → cancelar | ✅ |
+| Integración | I3 | `tests/integration/players.test.ts` | Roster: link de op.gg obligatorio (sin link 422, otro sitio 422, otro servidor 422, se guarda normalizado), el rango enviado por el cliente se ignora y sin clave queda sin sincronizar, sincronizar sin clave 503, capitán agrega y edita, analista 403, titular duplicado 409, cuenta repetida 409, Riot ID inválido 422, Maestro sin división, el rival ve el perfil | ✅ |
+| End-to-end | E1 | `tests/e2e/schedule-flow.spec.ts` | Crea su propio equipo, rival y coach temporales (y los borra al terminar). En el navegador: login → agendar con 5 juegos y link → Enviadas → detalle → Sala → copiar invitación → Actividad → cancelar | ✅ |
 
 ### Endpoints validados (17)
 
@@ -89,6 +90,7 @@ Además de las pruebas automatizadas, se hizo una verificación manual de los en
 | CA-15 | En el detalle del scrim se ve la descripción de cada equipo, su ELO promedio y el Riot ID principal de sus jugadores | I3 (perfil visible para el rival), U6 (cálculo del promedio); revisado en el navegador en Scrims → Detalles | ✅ Cumple |
 | CA-16 | Donde se muestra el ELO aparece el emblema oficial de la liga | Revisado en el navegador: roster, ELO promedio, detalle del scrim, ranking (tabla, podio y divisiones), Inicio y Mi equipo. Emblemas en `public/ranks/` | ✅ Cumple (verificación manual) |
 | CA-17 | El link de op.gg es obligatorio para registrar a un jugador | I3 (sin link 422, link de otro sitio 422, servidor distinto al del equipo 422), U7 (lectura del link); en la UI el botón Agregar queda deshabilitado sin un link válido | ✅ Cumple |
+| CA-18 | El rango, la división y los LP no se escriben a mano: se obtienen automáticamente | U8 (lectura desde la API oficial de Riot), I3 (la API ignora rangos enviados por el cliente); el formulario ya no tiene campos de rango. Probado con respuestas simuladas: falta probar con una clave real de Riot | ⚠️ Cumple en código, pendiente de clave real |
 
 ## Hallazgos corregidos durante las pruebas
 

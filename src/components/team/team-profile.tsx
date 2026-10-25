@@ -1,6 +1,6 @@
 "use client";
 import { motion } from "framer-motion";
-import { ExternalLink, Users } from "lucide-react";
+import { AlertTriangle, ExternalLink, Users } from "lucide-react";
 import useSWR from "swr";
 import { POSITIONS, formatRank, tierMeta, type LolTier, type Position } from "@/lib/lol";
 import { cn } from "@/lib/client";
@@ -17,13 +17,44 @@ export type PlayerDTO = {
   division: number | null;
   lp: number;
   opgg: string;
+  level: number | null;
+  wins: number | null;
+  losses: number | null;
+  rankUpdatedAt: string | null;
 };
 
 export type TeamProfile = {
   team: { id: string; name: string; tag: string; color: string; region: string; rating: number; description: string | null };
   players: PlayerDTO[];
   eloAverage: { tier: LolTier; label: string; color: string; count: number } | null;
+  rankSync: boolean;
 };
+
+/** Pista de posible smurf: cuenta de nivel bajo o con muy pocas partidas clasificatorias. */
+export function lowAccount(p: PlayerDTO) {
+  if (p.level == null && p.wins == null) return false;
+  return (p.level ?? 999) < 50 || (p.tier != null && (p.wins ?? 0) + (p.losses ?? 0) < 40);
+}
+
+function AccountInfo({ p }: { p: PlayerDTO }) {
+  if (!p.rankUpdatedAt) return <span className="text-[10px] text-stone-400">Sin sincronizar</span>;
+  const games = (p.wins ?? 0) + (p.losses ?? 0);
+  return (
+    <span className="flex flex-wrap items-center gap-x-2 text-[10px] text-stone-400">
+      {p.level != null && <span>Nv. {p.level}</span>}
+      {games > 0 && (
+        <span>
+          {games} partidas · {Math.round(((p.wins ?? 0) / games) * 100)}% WR
+        </span>
+      )}
+      {lowAccount(p) && (
+        <span className="flex items-center gap-1 text-gold-300" title="Nivel bajo o pocas partidas: podría no ser la cuenta principal">
+          <AlertTriangle className="h-3 w-3" /> Pocas partidas
+        </span>
+      )}
+    </span>
+  );
+}
 
 export function RankLabel({ tier, division, lp, className }: { tier: LolTier | null; division: number | null; lp: number; className?: string }) {
   const color = tier ? tierMeta(tier).color : "#7B7A72";
@@ -72,7 +103,7 @@ export function EloAverageBadge({ elo }: { elo: TeamProfile["eloAverage"] }) {
 }
 
 /** Lista de jugadores: Riot ID principal, posición, rango y link a op.gg. */
-export function PlayerList({ players, actions }: { players: PlayerDTO[]; actions?: (p: PlayerDTO) => React.ReactNode }) {
+export function PlayerList({ players, actions, showAccount }: { players: PlayerDTO[]; actions?: (p: PlayerDTO) => React.ReactNode; showAccount?: boolean }) {
   if (!players.length)
     return (
       <p className="flex items-center gap-2 rounded-md border border-dashed border-void-500 p-4 text-sm text-stone-400">
@@ -96,6 +127,7 @@ export function PlayerList({ players, actions }: { players: PlayerDTO[]; actions
               <span className="font-normal text-stone-400">#{p.tagLine}</span>
             </p>
             <RankLabel tier={p.tier} division={p.division} lp={p.lp} />
+            {showAccount ? <AccountInfo p={p} /> : lowAccount(p) && <AccountInfo p={p} />}
           </div>
           <a
             href={p.opgg}

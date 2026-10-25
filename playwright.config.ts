@@ -1,5 +1,10 @@
 import { defineConfig, devices } from "@playwright/test";
 
+// Las pruebas E2E preparan sus propios datos en la BD (DATABASE_URL del .env)
+try {
+  process.loadEnvFile(".env");
+} catch {}
+
 export default defineConfig({
   testDir: "tests/e2e",
   timeout: 90_000,

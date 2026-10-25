@@ -142,6 +142,12 @@ model Player {
   tier      LolTier?
   division  Int? // 1-4 (null para Maestro+ o sin rango)
   lp        Int      @default(0)
+  // Datos sincronizados desde la API oficial de Riot (la misma fuente que usa op.gg)
+  puuid         String?   @unique
+  summonerLevel Int?
+  wins          Int?
+  losses        Int?
+  rankUpdatedAt DateTime?
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 

@@ -73,9 +73,30 @@ League of Legends
 - [x] Se respetan los límites de peticiones guardando los rangos en caché.
 - [ ] Si Riot pide ver la app funcionando, comparte capturas o un video corto del roster y del detalle del scrim.
 
-## Qué haremos cuando llegue la clave
+## Cómo activarla en AU Scrims
 
-1. Agregar `RIOT_API_KEY` al `.env` y al `docker-compose.yml`.
-2. Al registrar un jugador con su link de op.gg, validar el Riot ID contra la API de Riot.
-3. Llenar automáticamente rango, división y LP, con un botón **Sincronizar rangos** y la fecha de la última actualización.
-4. Mantener el ingreso manual como respaldo si la API no responde.
+La integración ya está programada; solo falta la clave.
+
+1. Pega la clave en el archivo `.env`:
+
+   ```
+   RIOT_API_KEY=RGAPI-xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx
+   ```
+
+2. Recrea el contenedor para que tome la variable:
+
+   ```bash
+   docker compose up -d
+   ```
+
+3. En **Mi equipo → Jugadores** pulsa **Actualizar rangos**. Desde ese momento, al agregar un jugador con su link de op.gg se verifica que la cuenta exista y se traen solos su rango, división, LP, nivel y partidas de SoloQ.
+
+Con la **Development key** hay que repetir los pasos 1 y 2 cada día, porque vence a las 24 horas. Con la **Personal key** se hace una sola vez.
+
+### Endpoints que usa la app
+
+| Dato | Endpoint | Enrutamiento |
+| --- | --- | --- |
+| Validar Riot ID y obtener PUUID | `/riot/account/v1/accounts/by-riot-id/{gameName}/{tagLine}` | `americas` (LAN, LAS, NA, BR, OCE) · `europe` · `asia` |
+| Nivel de la cuenta | `/lol/summoner/v4/summoners/by-puuid/{puuid}` | `la1` LAN · `la2` LAS · `na1` · `br1` · `euw1` · `eun1` · `kr` · `oc1` |
+| Rango de SoloQ | `/lol/league/v4/entries/by-puuid/{puuid}` | igual que el anterior |

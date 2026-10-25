@@ -29,8 +29,6 @@ export const updateTeamSchema = z
   .object({ ...teamFields, description: z.string().trim().max(400, "Máximo 400 caracteres").nullable().transform((v) => v || null) })
   .partial();
 
-const tiers = ["IRON", "BRONZE", "SILVER", "GOLD", "PLATINUM", "EMERALD", "DIAMOND", "MASTER", "GRANDMASTER", "CHALLENGER"] as const;
-const apexTiers = new Set(["MASTER", "GRANDMASTER", "CHALLENGER"]);
 
 export const playerSchema = z
   .object({
@@ -49,17 +47,15 @@ export const playerSchema = z
         return r;
       }),
     position: z.enum(["TOP", "JUNGLE", "MID", "ADC", "SUPPORT", "SUB"], { message: "Selecciona una posición" }),
-    tier: z.enum(tiers).nullable().default(null),
-    division: z.coerce.number().int().min(1).max(4).nullable().default(null),
-    lp: z.coerce.number().int().min(0, "LP inválidos").max(3000, "LP inválidos").default(0),
   })
-  .transform(({ opgg, ...v }) => {
-    const account = { gameName: opgg.gameName, tagLine: opgg.tagLine, opggUrl: opgg.url, opggRegion: opgg.region };
-    // Sin rango → sin división ni LP; Maestro+ no tiene división; el resto exige división
-    if (!v.tier) return { ...v, ...account, division: null, lp: 0 };
-    if (apexTiers.has(v.tier)) return { ...v, ...account, division: null };
-    return { ...v, ...account, division: v.division ?? 4, lp: Math.min(v.lp, 99) };
-  });
+  // El rango, la división y los LP no se capturan: se obtienen de la API de Riot
+  .transform(({ opgg, position }) => ({
+    position,
+    gameName: opgg.gameName,
+    tagLine: opgg.tagLine,
+    opggUrl: opgg.url,
+    opggRegion: opgg.region,
+  }));
 export const deleteTeamSchema = z.object({ confirmName: z.string().trim().min(1, "Escribe el nombre del equipo para confirmar") });
 export const joinTeamSchema = z.object({ inviteCode: z.string().trim().toUpperCase().min(6, "Código inválido").max(12) });
 
