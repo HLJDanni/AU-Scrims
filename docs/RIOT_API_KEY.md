@@ -75,7 +75,9 @@ League of Legends
 
 ## Cómo activarla en AU Scrims
 
-La integración ya está programada; solo falta la clave.
+La integración está programada y **verificada con una clave real** (26/10/2026): los tres endpoints responden y la app trae el rango al agregar jugadores.
+
+> Si Riot responde **401 "Unknown apikey"**, la clave venció o se regeneró después de copiarla: regenera en el Dashboard, pégala de nuevo en `.env` y recrea el contenedor.
 
 1. Pega la clave en el archivo `.env`:
 
