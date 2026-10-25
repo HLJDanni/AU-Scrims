@@ -1,6 +1,6 @@
 import { db } from "@/lib/db";
 import { fail, parseBody, withTeam, withUser } from "@/lib/api";
-import { createTeamSchema, updateTeamSchema } from "@/lib/validators";
+import { createTeamSchema, deleteTeamSchema, updateTeamSchema } from "@/lib/validators";
 import { generateInviteCode } from "@/lib/team";
 
 /** Mi equipo: datos, miembros y estadísticas. */
@@ -100,4 +100,24 @@ export const PATCH = withTeam(async ({ req, user }) => {
   }
   const team = await db.team.update({ where: { id: user.teamId }, data });
   return { team };
+});
+
+/**
+ * Eliminar el equipo (solo Coach). Requiere escribir el nombre exacto para confirmar.
+ * El staff queda sin equipo y se borran sus scrims (también del historial de los rivales).
+ */
+export const DELETE = withTeam(async ({ req, user }) => {
+  if (user.role !== "COACH") fail(403, "Solo el coach puede eliminar el equipo");
+  const { confirmName } = await parseBody(req, deleteTeamSchema);
+  if (confirmName !== user.team.name) fail(422, "El nombre no coincide con el del equipo");
+
+  const removed = await db.$transaction(async (tx) => {
+    const members = await tx.user.updateMany({ where: { teamId: user.teamId }, data: { teamId: null } });
+    const scrims = await tx.scrim.deleteMany({
+      where: { OR: [{ requesterTeamId: user.teamId }, { opponentTeamId: user.teamId }] },
+    });
+    await tx.team.delete({ where: { id: user.teamId } });
+    return { members: members.count, scrims: scrims.count };
+  });
+  return { ok: true, ...removed };
 });

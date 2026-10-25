@@ -1,6 +1,6 @@
 "use client";
 import { motion } from "framer-motion";
-import { BarChart3, Copy, KeyRound, LogOut, RefreshCw, Settings, ShieldCheck, UserMinus, Users } from "lucide-react";
+import { AlertTriangle, BarChart3, Copy, KeyRound, LogOut, RefreshCw, Settings, ShieldCheck, Trash2, UserMinus, Users } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import useSWR from "swr";
@@ -11,6 +11,7 @@ import { tierFor } from "@/lib/elo";
 import { Tabs, TabPanel } from "../ui/tabs";
 import { EmptyState, PageHeader, RoleBadge, Skeleton, StatCard, TeamEmblem } from "../ui/misc";
 import { Button } from "../ui/button";
+import { Modal } from "../ui/modal";
 import { useShell } from "../app-shell";
 
 type TeamData = {
@@ -72,7 +73,12 @@ export function TeamView() {
         {tab === "roster" && <Roster data={data} onChange={() => mutate()} />}
         {tab === "invite" && <Invite data={data} onChange={() => mutate()} />}
         {tab === "stats" && <Stats data={data} />}
-        {tab === "settings" && data.canManage && <TeamSettings data={data} onChange={() => mutate()} />}
+        {tab === "settings" && data.canManage && (
+          <div className="space-y-6">
+            <TeamSettings data={data} onChange={() => mutate()} />
+            <DangerZone data={data} />
+          </div>
+        )}
       </TabPanel>
     </>
   );
@@ -298,5 +304,75 @@ function TeamSettings({ data, onChange }: { data: TeamData; onChange: () => void
         <p className="mt-2 font-display font-bold text-gold-50">{form.name}</p>
       </div>
     </form>
+  );
+}
+
+function DangerZone({ data }: { data: TeamData }) {
+  const router = useRouter();
+  const [open, setOpen] = useState(false);
+  const [confirm, setConfirm] = useState("");
+  const [busy, setBusy] = useState(false);
+  const matches = confirm.trim() === data.team.name;
+
+  async function remove() {
+    setBusy(true);
+    try {
+      await api("/api/team", { method: "DELETE", body: { confirmName: confirm.trim() } });
+      toast.success(`${data.team.name} fue eliminado`);
+      router.replace("/onboarding");
+      router.refresh();
+    } catch (err) {
+      toast.error((err as Error).message);
+      setBusy(false);
+    }
+  }
+
+  return (
+    <div className="max-w-3xl rounded-md border border-blood/40 bg-blood/5 p-6">
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+        <div>
+          <p className="flex items-center gap-2 font-display text-base font-bold tracking-wide text-blood">
+            <AlertTriangle className="h-4 w-4" /> Zona de peligro
+          </p>
+          <p className="mt-1 text-sm text-stone-300">
+            Eliminar el equipo borra sus scrims (también del historial de los rivales) y deja a todo el staff sin equipo. No se puede deshacer.
+          </p>
+        </div>
+        <Button
+          variant="danger"
+          className="shrink-0 whitespace-nowrap"
+          onClick={() => {
+            setConfirm("");
+            setOpen(true);
+          }}
+        >
+          <Trash2 className="h-4 w-4" /> Eliminar equipo
+        </Button>
+      </div>
+
+      <Modal open={open} onClose={() => !busy && setOpen(false)} title="Eliminar equipo" subtitle="Esta acción es permanente">
+        <div className="space-y-5">
+          <ul className="space-y-1.5 rounded-md border border-blood/30 bg-blood/5 p-4 text-sm text-stone-300">
+            <li>• Se eliminarán todos los scrims de <b className="text-gold-50">{data.team.name}</b>, incluidos los finalizados.</li>
+            <li>• Los {data.members.length} miembros del staff quedarán sin equipo.</li>
+            <li>• El equipo desaparecerá del ranking.</li>
+          </ul>
+          <div>
+            <label htmlFor="confirm-team" className="label normal-case tracking-normal">
+              Escribe <span className="font-bold text-gold-50">{data.team.name}</span> para confirmar
+            </label>
+            <input id="confirm-team" className="field" autoComplete="off" value={confirm} onChange={(e) => setConfirm(e.target.value)} />
+          </div>
+          <div className="flex justify-end gap-2">
+            <Button variant="ghost" onClick={() => setOpen(false)} disabled={busy}>
+              Cancelar
+            </Button>
+            <Button variant="danger" disabled={!matches} loading={busy} onClick={remove}>
+              Eliminar definitivamente
+            </Button>
+          </div>
+        </div>
+      </Modal>
+    </div>
   );
 }

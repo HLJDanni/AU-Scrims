@@ -25,6 +25,7 @@ export const teamFields = {
 
 export const createTeamSchema = z.object(teamFields);
 export const updateTeamSchema = z.object(teamFields).partial();
+export const deleteTeamSchema = z.object({ confirmName: z.string().trim().min(1, "Escribe el nombre del equipo para confirmar") });
 export const joinTeamSchema = z.object({ inviteCode: z.string().trim().toUpperCase().min(6, "Código inválido").max(12) });
 
 export const registerSchema = z

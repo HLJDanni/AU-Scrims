@@ -1,6 +1,6 @@
 # Plan y resultados de pruebas · AU Scrims
 
-**Fecha de ejecución:** 24/10/2026 · **Entorno:** Docker local (app `:3000`, PostgreSQL `:5434`), datos demo · **Resultado global:** 14/14 pruebas automatizadas aprobadas
+**Fecha de ejecución:** 24/10/2026 · **Entorno:** Docker local (app `:3000`, PostgreSQL `:5434`), datos demo · **Resultado global:** 15/15 pruebas automatizadas aprobadas
 
 ## Cómo ejecutarlas
 
@@ -33,6 +33,7 @@ Las pruebas de caja negra, integración y E2E usan los usuarios demo y limpian l
 | Caja negra | N4 | `tests/blackbox/api.test.ts` | Choque de horario → 409; el anfitrión no puede aceptar (403); el rival sí; doble respuesta → 400 | ✅ |
 | Caja negra | N5 | `tests/blackbox/api.test.ts` | Un tercer equipo no ve, edita ni cancela el scrim (404) y no aparece en sus listas; ranking ordenado | ✅ |
 | Integración | I1 | `tests/integration/scrim-lifecycle.test.ts` | Agendar → aceptar → proponer → aprobar → link → jugar → resultado: estado en BD, Elo de ambos equipos, bitácora y ranking | ✅ |
+| Integración | I2 | `tests/integration/delete-team.test.ts` | Eliminar equipo: capitán 403, nombre incorrecto 422, coach 200; se borran equipo y scrims, el staff queda sin equipo y va a `/onboarding` | ✅ |
 | End-to-end | E1 | `tests/e2e/schedule-flow.spec.ts` | En el navegador: login → agendar con 5 juegos y link → Enviadas → detalle → Sala → copiar invitación → Actividad → cancelar | ✅ |
 
 ### Endpoints validados (17)
@@ -44,6 +45,7 @@ Además de las pruebas automatizadas, se hizo una verificación manual de los en
 | `POST /api/auth/register` | crear equipo 200 · correo duplicado 409 · unirse con código 200 · código inválido 404 | ✅ |
 | `POST /api/auth/login` · `GET /api/auth/me` · `POST /api/auth/logout` | N1; tras logout la API responde 401 | ✅ |
 | `GET/POST/PATCH /api/team` | capitán edita 403 · coach edita 200 · sin equipo 403 | ✅ |
+| `DELETE /api/team` | I2: solo coach, confirmación por nombre, borrado en cascada de scrims | ✅ |
 | `POST /api/team/join` · `POST /api/team/invite` | N2; coach regenera 200 | ✅ |
 | `DELETE /api/team/members/:id` | capitán quita al coach 403 · coach quita al capitán 200 → este va a `/onboarding` | ✅ |
 | `GET /api/teams` · `GET /api/leaderboard` · `GET /api/health` | N5, health 200 | ✅ |
@@ -79,6 +81,7 @@ Además de las pruebas automatizadas, se hizo una verificación manual de los en
 | CA-11 | Respuesta rápida | p95 ≤ 35 ms en todos los endpoints de lectura; UI con SWR y caché | ✅ Cumple |
 | CA-12 | Escalable | App sin estado (JWT), índices en `Scrim`, imagen `standalone` | ⚠️ Cumple parcialmente: el rate limiter vive en memoria, hay que moverlo a Redis antes de correr varias réplicas |
 | CA-13 | Temática LoL (negro, gris, dorado, amarillo, blanco, café), animaciones, UX fluida y pestañas con secciones | Revisado manualmente: Dashboard, Calendario, Scrims (Próximos/Solicitudes/Historial), Ranking (Clasificación/Divisiones/Más activos), Equipo (Staff/Invitación/Estadísticas/Ajustes), panel del scrim (Detalles/Sala/Actividad) | ✅ Cumple (verificación manual) |
+| CA-14 | Solo los coaches pueden eliminar un equipo | I2 (capitán 403, confirmación obligatoria, efecto verificado en BD); la opción solo aparece en la pestaña Ajustes, visible únicamente para el coach | ✅ Cumple |
 
 ## Hallazgos corregidos durante las pruebas
 
