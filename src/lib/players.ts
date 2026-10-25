@@ -3,7 +3,7 @@ import type { Player } from "@prisma/client";
 import { db } from "./db";
 import { fail } from "./api";
 import { POSITIONS, eloAverage } from "./lol";
-import { RiotError, fetchRankedProfile, fetchRecentRankedMatches, riotEnabled, riotHttpStatus, type RankedProfile } from "./riot";
+import { RiotError, fetchRankedProfile, riotEnabled, riotHttpStatus, type RankedProfile } from "./riot";
 
 export const MAX_PLAYERS = 10;
 
@@ -94,19 +94,6 @@ export function rankedFields(r: RankedProfile) {
   };
 }
 
-/**
- * Después de traer el rango: guarda una foto (para ver la evolución) y las partidas de SoloQ nuevas (para el KDA).
- * Solo descarga partidas que aún no tenemos, como máximo 5 por jugador y sincronización.
- */
-export async function recordPlayerStats(playerId: string, region: string, r: RankedProfile) {
-  await db.playerSnapshot.create({
-    data: { playerId, tier: r.tier, division: r.division, lp: r.lp, wins: r.wins ?? 0, losses: r.losses ?? 0 },
-  });
-  const known = new Set((await db.playerMatch.findMany({ where: { playerId }, select: { matchId: true } })).map((m) => m.matchId));
-  const fresh = await fetchRecentRankedMatches(region, r.puuid, known);
-  if (fresh.length) await db.playerMatch.createMany({ data: fresh.map((m) => ({ ...m, playerId })), skipDuplicates: true });
-}
-
 /** Actualiza el rango de todos los jugadores de un equipo. Devuelve cuántos se actualizaron y los errores. */
 export async function syncTeamRanks(teamId: string, region: string) {
   const players = await db.player.findMany({ where: { teamId } });
@@ -117,7 +104,6 @@ export async function syncTeamRanks(teamId: string, region: string) {
     try {
       const r = await fetchRankedProfile(region, p.gameName, p.tagLine);
       await db.player.update({ where: { id: p.id }, data: rankedFields(r) });
-      await recordPlayerStats(p.id, region, r);
       updated++;
     } catch (e) {
       const message = e instanceof Error ? e.message : "Error desconocido";

@@ -28,10 +28,9 @@ Las pruebas de caja negra, integración y E2E usan los usuarios demo y limpian l
 | Unitaria | U6 | `tests/unit/lol.test.ts` | Rangos de SoloQ: escala numérica e inversa, ELO promedio de titulares (ignora suplentes y sin rango), Riot ID y link de op.gg | ✅ |
 | Unitaria | U7 | `tests/unit/lol.test.ts` | Link de op.gg: acepta formatos actual, antiguo y con idioma; extrae región y Riot ID; normaliza; rechaza u.gg, rutas que no son perfiles, regiones desconocidas y links sin tag | ✅ |
 | Unitaria | U8 | `tests/unit/riot.test.ts` | Cliente de la API de Riot con respuestas simuladas: rango de SoloQ (ignora Flex), Maestro sin división, sin rango, enrutamiento LAN → `americas`/`la1`, clave en cabecera y errores 404/403/429 y sin clave | ✅ |
+| Unitaria | R1 | `tests/unit/reminders.test.ts` | Avisos de inicio: umbrales de 15, 10 y 5 min (límites incluidos), nada antes de 15 min ni después de empezar, clave distinta al re-agendar y cuenta regresiva | ✅ |
 | Unitaria | S1 | `tests/unit/swiss.test.ts` | Motor suizo: ronda 1 por siembra, Bo3 en partidos decisivos, descanso con impares (una vez por equipo), torneos de 4 a 16 equipos terminan en ≤5 partidos por equipo y nunca hay revancha si existía alternativa | ✅ |
 | Unitaria | S2 | `tests/unit/swiss.test.ts` | Elegibilidad: Barón (Maestro+), Heraldo (Platino II–Diamante I, límites incluidos), rechazo por rating, victorias, roster o ELO; suplentes fuera del promedio | ✅ |
-| Unitaria | U9 | `tests/unit/riot.test.ts` | Partidas de SoloQ para el KDA (MATCH-V5 simulado): solo descarga las nuevas, tope por sincronización, toma al jugador correcto y enrutamiento regional | ✅ |
-| Unitaria | P1 | `tests/unit/player-ranking.test.ts` | Ranking de jugadores: orden por win rate con mínimo de partidas y desempates, filtro por rol, KDA de las 20 partidas más recientes y evolución del win rate | ✅ |
 | Caja blanca | W1 | `tests/whitebox/scrim-dto.test.ts` | `toDTO`: ramas anfitrión/invitado (marcador y delta invertidos), valores nulos | ✅ |
 | Caja blanca | W2 | `tests/whitebox/scrim-dto.test.ts` | `toDTO`: ramas de propuesta (ninguna, incompleta, propia, del rival, juegos por defecto) | ✅ |
 | Caja negra | N1 | `tests/blackbox/api.test.ts` | Login: 401 con mensaje genérico, cookie `httpOnly` + `SameSite=Lax`, `/me` sin hash | ✅ |
@@ -45,6 +44,7 @@ Las pruebas de caja negra, integración y E2E usan los usuarios demo y limpian l
 | Integración | I4 | `tests/integration/tournament.test.ts` | Torneo completo vía API: solo coach organiza, uno abierto por división, inscripción por rol y requisitos (9 victorias → 403), mínimo 4 equipos, solo el organizador inicia, siembra 1v3/2v4, validación de marcador Bo1/Bo3, permisos de reporte, doble reporte, fin con todos clasificados o eliminados y coherencia en BD | ✅ |
 | Integración | I5 | `tests/integration/privacy-legend.test.ts` | Privacidad mutua: sin scrim nadie ve el roster rival (sí su ELO promedio); con scrim lo ven coach y analista de ambos lados, no capitán ni Leyenda; al cancelar vuelve a ser privado. Leyenda con equipo: lee sus scrims, no agenda (403) ni ve la invitación; sin equipo: ranking, jugadores y torneos sí, scrims no, y las páginas de equipo la mandan al ranking | ✅ |
 | End-to-end | E1 | `tests/e2e/schedule-flow.spec.ts` | Crea su propio equipo, rival y coach temporales (y los borra al terminar). En el navegador: login → agendar con 5 juegos y link → Enviadas → detalle → Sala → copiar invitación → Actividad → cancelar | ✅ |
+| End-to-end | E2 | `tests/e2e/schedule-flow.spec.ts` | Con un scrim confirmado a 6 min: el aviso aparece con minutos restantes, cuenta regresiva y botón para unirse a la sala; al descartarlo desaparece y no vuelve al recargar | ✅ |
 
 ### Endpoints validados (17)
 
@@ -57,7 +57,7 @@ Además de las pruebas automatizadas, se hizo una verificación manual de los en
 | `GET/POST/PATCH /api/team` | capitán edita 403 · coach edita 200 · sin equipo 403 | ✅ |
 | `GET/POST /api/team/players` · `PATCH/DELETE /api/team/players/:id` · `GET /api/teams/:id/profile` | I3 | ✅ |
 | `GET/POST /api/tournaments` · `GET /api/tournaments/eligibility` · `GET/DELETE /api/tournaments/:id` · `POST …/join` · `POST …/leave` · `POST …/start` · `POST …/matches/:id` | I4 y simulación (`npm run simulate:tournaments`) | ✅ |
-| `GET /api/players/ranking` · `GET /api/teams` (con ELO promedio) · `GET /api/teams/:id/profile` (privacidad mutua) | P1, I5 | ✅ |
+| `GET /api/teams` (con ELO promedio) · `GET /api/teams/:id/profile` (privacidad mutua) | I5 | ✅ |
 | `DELETE /api/team` | I2: solo coach, confirmación por nombre, borrado en cascada de scrims | ✅ |
 | `POST /api/team/join` · `POST /api/team/invite` | N2; coach regenera 200 | ✅ |
 | `DELETE /api/team/members/:id` | capitán quita al coach 403 · coach quita al capitán 200 → este va a `/onboarding` | ✅ |
@@ -106,7 +106,7 @@ Además de las pruebas automatizadas, se hizo una verificación manual de los en
 | CA-23 | Al agendar un scrim se puede filtrar a los rivales por ELO promedio con un dropdown | I5 (la lista de rivales trae el ELO promedio y no los jugadores); dropdown con emblemas y conteo por liga revisado en el navegador | ✅ Cumple |
 | CA-24 | Rol "Leyendas": ve bracket de torneos, ranking y equipos inscritos, pero no los jugadores; solo ve datos de su equipo y no agenda | I5, U5 (registro sin equipo); menú reducido y vistas de solo lectura revisadas en el navegador | ✅ Cumple |
 | CA-25 | Los Riot ID / op.gg de otros equipos solo los ven coaches y analistas con un scrim mutuo | I5 | ✅ Cumple |
-| CA-26 | Sección de jugadores: top 3, top 20, filtro por rol, Riot ID, equipo, KDA y win rate, con evolución | P1, U9, I5; revisado en el navegador. Con datos demo hasta configurar RIOT_API_KEY | ⚠️ Cumple con datos demo, pendiente de clave real |
+| CA-26 | Aviso estilo Teams a los 15, 10 y 5 minutos del inicio de un scrim, con la temática de la app | R1, E2; revisado en el navegador con `npm run simulate:upcoming` (sonido, botón de sala, invitación y aviso del escritorio opcional) | ✅ Cumple |
 
 ## Hallazgos corregidos durante las pruebas
 

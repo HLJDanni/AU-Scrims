@@ -57,11 +57,16 @@ Con el stack levantado: `npm test` (Vitest + Playwright). El detalle de cada pru
 
 ## Rol Leyenda y privacidad
 
-- **Leyenda:** rol de solo lectura. Sin equipo ve el ranking de equipos, el de jugadores y los torneos (bracket y equipos inscritos). Si pertenece a un equipo, además ve los scrims, el calendario y el roster **de su equipo**, sin poder agendar ni editar. Se registra eligiendo "Sin equipo" o con un código de invitación.
+- **Leyenda:** rol de solo lectura. Sin equipo ve el ranking de equipos y los torneos (bracket y equipos inscritos). Si pertenece a un equipo, además ve los scrims, el calendario y el roster **de su equipo**, sin poder agendar ni editar. Se registra eligiendo "Sin equipo" o con un código de invitación.
 - **Privacidad mutua:** los jugadores (Riot ID y op.gg) de un equipo solo los ve su propio equipo. El coach y el analista de otro equipo los ven únicamente cuando ambos tienen un scrim agendado o jugado. El ELO promedio sí es visible para todos.
-- **Excepción:** la sección *Jugadores* muestra el top por win rate con Riot ID, equipo, rol, KDA y evolución, sin op.gg ni roster completo.
 
-Usuarios de prueba: `leyenda` (sin equipo), `leyenda.hxw` y `leyenda.cld` (con equipo); se crean con `npm run simulate:players`, que también genera el KDA y la evolución demo mientras no haya `RIOT_API_KEY` (`--reset` regenera solo esos datos).
+Usuarios de prueba: `leyenda` (sin equipo), `leyenda.hxw` y `leyenda.cld` (con equipo); se crean con `npm run simulate:legends`.
+
+## Avisos de inicio de scrim
+
+A los **15, 10 y 5 minutos** de un scrim confirmado aparece abajo a la derecha un aviso estilo Teams con el rival, la cuenta regresiva, el botón **Unirse a la sala** (o la alerta de que falta el link) y **Copiar invitación**. Suena una campanita (se puede silenciar) y, si lo permites, también llega una notificación del escritorio cuando la pestaña no está visible. Descartar un aviso se recuerda en ese navegador; si el scrim se re-agenda, los avisos vuelven a salir.
+
+Para verlo con datos de prueba: `npm run simulate:upcoming` crea scrims que empiezan en ~16, ~11 y ~6 minutos para HXW, CLD y JDS (entra con `coach.hxw`, `coach.cld` o `coach.jds`), más próximos scrims y resultados recientes. `--in 20` cambia los minutos del primero.
 
 ## Torneos suizos
 

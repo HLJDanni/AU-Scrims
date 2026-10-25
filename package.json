@@ -16,7 +16,8 @@
     "test:integration": "vitest run tests/integration",
     "test:e2e": "playwright test",
     "simulate:tournaments": "node scripts/simulate-tournaments.mjs",
-    "simulate:players": "node scripts/simulate-player-stats.mjs"
+    "simulate:legends": "node scripts/simulate-legends.mjs",
+    "simulate:upcoming": "node scripts/simulate-upcoming.mjs"
   },
   "prisma": {
     "seed": "node prisma/seed.mjs"

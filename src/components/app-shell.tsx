@@ -2,7 +2,7 @@
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { AnimatePresence, motion } from "framer-motion";
-import { CalendarDays, Crown, LayoutDashboard, TrendingUp, LogOut, Menu, Plus, Swords, Trophy, Users, X } from "lucide-react";
+import { CalendarDays, Crown, LayoutDashboard, LogOut, Menu, Plus, Swords, Trophy, Users, X } from "lucide-react";
 import { createContext, useContext, useState } from "react";
 import { SWRConfig } from "swr";
 import useSWR from "swr";
@@ -13,6 +13,7 @@ import { RoleBadge, TeamEmblem } from "./ui/misc";
 import { Button } from "./ui/button";
 import { ScrimForm, type ScrimFormPrefill } from "./scrims/scrim-form";
 import { ScrimDrawer } from "./scrims/scrim-drawer";
+import { ScrimReminders } from "./scrims/scrim-reminders";
 
 export type ShellUser = {
   id: string;
@@ -42,7 +43,6 @@ const NAV = [
   { href: "/calendar", label: "Calendario", icon: CalendarDays, team: true },
   { href: "/scrims", label: "Scrims", icon: Swords, badge: true, team: true },
   { href: "/leaderboard", label: "Ranking", icon: Trophy },
-  { href: "/players", label: "Jugadores", icon: TrendingUp },
   { href: "/tournaments", label: "Torneos", icon: Crown },
   { href: "/team", label: "Mi equipo", icon: Users, team: true },
 ];
@@ -137,6 +137,7 @@ export function AppShell({ user, children }: { user: ShellUser; children: React.
           onClose={() => setForm((f) => ({ ...f, open: false }))}
         />
         <ScrimDrawer id={detailId} onClose={() => setDetailId(null)} />
+        {user.team && <ScrimReminders />}
       </ShellContext.Provider>
     </SWRConfig>
   );

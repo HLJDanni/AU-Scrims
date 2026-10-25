@@ -1,6 +1,6 @@
 // Cliente de la API de Riot con fetch simulado: no consume cuota ni necesita una clave real.
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { RiotError, fetchRankedProfile, fetchRecentRankedMatches } from "@/lib/riot";
+import { RiotError, fetchRankedProfile } from "@/lib/riot";
 
 type Route = { match: RegExp; status?: number; body?: unknown };
 
@@ -76,25 +76,4 @@ describe("Unitarias · cliente de la API de Riot", () => {
     expect(await err([account])).toBe("auth");
   });
 
-  it("U9 · partidas de SoloQ para el KDA: solo descarga las nuevas, con tope por sincronización y enrutamiento regional", async () => {
-    const ids = ["LA1_9", "LA1_8", "LA1_7", "LA1_6", "LA1_5", "LA1_4", "LA1_3"];
-    const match = (id: string, k: number) => ({
-      metadata: { matchId: id },
-      info: { gameEndTimestamp: 1_790_000_000_000, gameCreation: 1, participants: [{ puuid: "OTRO", kills: 0, deaths: 0, assists: 0, win: false }, { puuid: "PUUID-1", kills: k, deaths: 2, assists: 7, win: true }] },
-    });
-    const calls = mockRiot([
-      { match: /\/matches\/by-puuid\/PUUID-1\/ids\?queue=420&type=ranked/, body: ids },
-      ...ids.map((id, i) => ({ match: new RegExp(`/matches/${id}$`), body: match(id, i) })),
-    ]);
-    const out = await fetchRecentRankedMatches("LAN", "PUUID-1", new Set(["LA1_9", "LA1_8"]), { maxNew: 3 });
-    expect(out.map((m) => m.matchId)).toEqual(["LA1_7", "LA1_6", "LA1_5"]); // salta las conocidas y respeta el tope
-    expect(out[0]).toMatchObject({ kills: 2, deaths: 2, assists: 7, win: true }); // toma al jugador correcto
-    expect(out[0].playedAt).toBeInstanceOf(Date);
-    expect(calls.every((c) => c.url.startsWith("https://americas.api.riotgames.com/lol/match/v5/"))).toBe(true);
-    expect(calls).toHaveLength(4); // 1 lista + 3 detalles
-
-    mockRiot([{ match: /ids/, body: [] }]);
-    const sea = await fetchRecentRankedMatches("OCE", "PUUID-1", new Set());
-    expect(sea).toEqual([]);
-  });
 });

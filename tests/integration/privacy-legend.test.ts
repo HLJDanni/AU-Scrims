@@ -84,17 +84,11 @@ describe("Integración · privacidad del roster y rol Leyenda", () => {
     expect((await leyA.get("/api/team")).body.team.inviteCode).toBeNull();
     expect((await leyA.post("/api/team", { name: "Nuevo", tag: "NVO" })).status).toBe(400); // ya tiene equipo
 
-    // Leyenda sin equipo: ranking, jugadores y torneos sí; scrims no
+    // Leyenda sin equipo: ranking y torneos sí; scrims no
     expect((await free.get("/api/leaderboard")).status).toBe(200);
     const t = await free.get("/api/tournaments");
     expect(t.status).toBe(200);
     expect(t.body.eligibility).toBeNull();
-    const ranking = await free.get("/api/players/ranking?position=MID");
-    expect(ranking.status).toBe(200);
-    for (const p of ranking.body.players) {
-      expect(p.position).toBe("MID");
-      expect(p).not.toHaveProperty("opgg");
-    }
     expect((await free.get("/api/scrims?scope=upcoming")).status).toBe(403);
     expect((await free.post("/api/team", { name: "Nuevo", tag: "NVO" })).status).toBe(403);
     const page = await fetch(`${BASE_URL}/scrims`, { headers: { Cookie: free.cookie }, redirect: "manual" });

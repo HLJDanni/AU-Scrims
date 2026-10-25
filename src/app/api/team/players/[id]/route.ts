@@ -1,8 +1,8 @@
 import { db } from "@/lib/db";
 import { fail, parseBody, withTeam } from "@/lib/api";
 import { playerSchema } from "@/lib/validators";
-import { riotEnabled, type RankedProfile } from "@/lib/riot";
-import { assertPlayerAllowed, assertSameRegion, canManagePlayers, loadRankedProfile, playerDTO, rankedFields, recordPlayerStats } from "@/lib/players";
+import { riotEnabled } from "@/lib/riot";
+import { assertPlayerAllowed, assertSameRegion, canManagePlayers, loadRankedProfile, playerDTO, rankedFields } from "@/lib/players";
 
 async function ownPlayer(id: string, teamId: string) {
   const player = await db.player.findUnique({ where: { id } });
@@ -23,14 +23,11 @@ export const PATCH = withTeam<{ id: string }>(async ({ req, user, params }) => {
   const reset = accountChanged
     ? { puuid: null, tier: null, division: null, lp: 0, summonerLevel: null, wins: null, losses: null, rankUpdatedAt: null }
     : {};
-  let riot: RankedProfile | null = null;
   const ranked =
     riotEnabled() && (accountChanged || !current.rankUpdatedAt)
-      ? rankedFields((riot = await loadRankedProfile(opggRegion, data.gameName, data.tagLine)))
+      ? rankedFields(await loadRankedProfile(opggRegion, data.gameName, data.tagLine))
       : {};
-  if (accountChanged) await db.playerMatch.deleteMany({ where: { playerId: params.id } }); // eran de otra cuenta
   const player = await db.player.update({ where: { id: params.id }, data: { ...data, ...reset, ...ranked } });
-  if (riot) await recordPlayerStats(player.id, opggRegion, riot).catch(() => null);
   return { player: playerDTO(player) };
 });
 

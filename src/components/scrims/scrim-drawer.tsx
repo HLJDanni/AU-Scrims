@@ -31,6 +31,7 @@ import { Skeleton, StatusBadge, TeamEmblem } from "../ui/misc";
 import { useShell } from "../app-shell";
 import { scrimState, useScrimActions } from "./use-scrim-actions";
 import { TeamProfileCard } from "../team/team-profile";
+import { scrimInvite } from "@/lib/invite";
 
 type Tab = "details" | "room" | "activity";
 
@@ -276,15 +277,7 @@ function RoomTab({ scrim, onSaved }: { scrim: ScrimDTO; onSaved: () => void }) {
   const editable = canAct && (scrim.status === "PENDING" || scrim.status === "CONFIRMED");
   useEffect(() => setLink(scrim.roomLink ?? ""), [scrim.roomLink]);
 
-  const invite = [
-    `⚔️ SCRIM ${scrim.myTeam.tag} vs ${scrim.opponent.tag}`,
-    `📅 ${fmtFull(scrim.startAt, scrim.endAt)}`,
-    `🎮 ${scrim.games} juegos`,
-    scrim.roomLink ? `🔗 Sala: ${scrim.roomLink}` : null,
-    scrim.notes ? `📝 ${scrim.notes}` : null,
-  ]
-    .filter(Boolean)
-    .join("\n");
+  const invite = scrimInvite(scrim);
 
   async function save() {
     setSaving(true);

@@ -100,3 +100,43 @@ test("E2E · login → agendar scrim con link → ver en solicitudes → detalle
   await expect(page.getByText("Scrim cancelado")).toBeVisible();
   await expect(drawer.getByText("Cancelado").first()).toBeVisible();
 });
+
+test("E2E · aviso estilo Teams cuando falta poco para un scrim confirmado, y descartarlo se recuerda", async ({ page }) => {
+  // Scrim confirmado que empieza en ~6 minutos (aviso de 10 min)
+  const [home, rival] = await Promise.all([
+    db.team.findUniqueOrThrow({ where: { tag: fixture.team.tag } }),
+    db.team.findUniqueOrThrow({ where: { tag: fixture.rival.tag } }),
+  ]);
+  const startAt = new Date(Date.now() + 6 * 60_000);
+  await db.scrim.create({
+    data: {
+      requesterTeamId: home.id,
+      opponentTeamId: rival.id,
+      startAt,
+      endAt: new Date(startAt.getTime() + 2 * 3600_000),
+      games: 3,
+      status: "CONFIRMED",
+      roomLink: "https://discord.gg/e2e-aviso",
+    },
+  });
+
+  await page.goto("/login");
+  await page.getByLabel("Usuario o correo").fill(fixture.username);
+  await page.getByLabel("Contraseña", { exact: true }).fill(PASSWORD);
+  await page.getByRole("button", { name: "Entrar" }).click();
+  await expect(page).toHaveURL(/\/dashboard/);
+
+  const notice = page.getByRole("alert").filter({ hasText: `vs ${fixture.rival.name}` });
+  await expect(notice).toBeVisible();
+  await expect(notice).toContainText(/Scrim en [56] min/);
+  await expect(notice).toContainText(/0[5-6]:\d\d/); // cuenta regresiva
+  await expect(notice.getByRole("link", { name: /Unirse a la sala/ })).toHaveAttribute("href", "https://discord.gg/e2e-aviso");
+
+  // Descartar: desaparece y no vuelve al recargar (mismo aviso de 10 min)
+  await notice.getByRole("button", { name: "Descartar aviso" }).click();
+  await expect(notice).toBeHidden();
+  await page.reload();
+  await expect(page.getByRole("heading", { name: fixture.team.name })).toBeVisible();
+  await page.waitForTimeout(1500);
+  await expect(page.getByRole("alert").filter({ hasText: `vs ${fixture.rival.name}` })).toBeHidden();
+});
