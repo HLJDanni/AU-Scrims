@@ -51,11 +51,13 @@ export const GET = withTeam(async ({ user }) => {
       color: team.color,
       region: team.region,
       rating: team.rating,
+      description: team.description,
       createdAt: team.createdAt,
       inviteCode: team.inviteCode,
     },
     members: team.members,
     canManage: isCoach,
+    canManagePlayers: isCoach || user.role === "CAPTAIN",
     stats: {
       rank: rank + 1,
       scrimsPlayed: completed.length,

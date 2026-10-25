@@ -14,6 +14,28 @@ enum Role {
   CAPTAIN
 }
 
+enum Position {
+  TOP
+  JUNGLE
+  MID
+  ADC
+  SUPPORT
+  SUB
+}
+
+enum LolTier {
+  IRON
+  BRONZE
+  SILVER
+  GOLD
+  PLATINUM
+  EMERALD
+  DIAMOND
+  MASTER
+  GRANDMASTER
+  CHALLENGER
+}
+
 enum ScrimStatus {
   PENDING // enviada, esperando respuesta del rival
   CONFIRMED // aceptada por ambos equipos
@@ -47,9 +69,11 @@ model Team {
   color      String   @default("#C8AA6E")
   inviteCode String   @unique
   rating     Int      @default(1200)
+  description String?
   createdAt  DateTime @default(now())
 
   members        User[]
+  players        Player[]
   scrimsHome     Scrim[] @relation("RequesterTeam")
   scrimsAway     Scrim[] @relation("OpponentTeam")
   proposalsMade  Scrim[] @relation("ProposalTeam")
@@ -104,4 +128,22 @@ model ScrimEvent {
   createdAt DateTime @default(now())
 
   @@index([scrimId, createdAt])
+}
+
+// Jugadores de LoL del equipo (no son usuarios de la plataforma). Se guarda su cuenta principal.
+model Player {
+  id        String   @id @default(cuid())
+  teamId    String
+  team      Team     @relation(fields: [teamId], references: [id], onDelete: Cascade)
+  gameName  String
+  tagLine   String
+  position  Position
+  tier      LolTier?
+  division  Int? // 1-4 (null para Maestro+ o sin rango)
+  lp        Int      @default(0)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([gameName, tagLine])
+  @@index([teamId])
 }

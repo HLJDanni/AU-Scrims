@@ -15,6 +15,7 @@ import {
   ShieldCheck,
   Trophy,
   User,
+  Users,
   X,
 } from "lucide-react";
 import { useEffect, useState } from "react";
@@ -29,6 +30,7 @@ import { Button } from "../ui/button";
 import { Skeleton, StatusBadge, TeamEmblem } from "../ui/misc";
 import { useShell } from "../app-shell";
 import { scrimState, useScrimActions } from "./use-scrim-actions";
+import { TeamProfileCard } from "../team/team-profile";
 
 type Tab = "details" | "room" | "activity";
 
@@ -188,6 +190,14 @@ function DetailsTab({ scrim, onChanged }: { scrim: ScrimDTO; onChanged: () => vo
           </Row>
         )}
       </div>
+
+      <section className="space-y-3">
+        <h3 className="flex items-center gap-2 text-[11px] font-semibold uppercase tracking-[0.18em] text-gold-200">
+          <Users className="h-3.5 w-3.5" /> Equipos
+        </h3>
+        <TeamProfileCard teamId={scrim.opponent.id} label="Rival" />
+        <TeamProfileCard teamId={scrim.myTeam.id} label="Tu equipo" />
+      </section>
 
       {st.canReport && <ResultForm scrim={scrim} busy={a.busy === "report"} onSubmit={(m, o) => a.report(scrim, m, o)} />}
 

@@ -24,7 +24,37 @@ export const teamFields = {
 };
 
 export const createTeamSchema = z.object(teamFields);
-export const updateTeamSchema = z.object(teamFields).partial();
+export const updateTeamSchema = z
+  .object({ ...teamFields, description: z.string().trim().max(400, "Máximo 400 caracteres").nullable().transform((v) => v || null) })
+  .partial();
+
+const tiers = ["IRON", "BRONZE", "SILVER", "GOLD", "PLATINUM", "EMERALD", "DIAMOND", "MASTER", "GRANDMASTER", "CHALLENGER"] as const;
+const apexTiers = new Set(["MASTER", "GRANDMASTER", "CHALLENGER"]);
+
+export const playerSchema = z
+  .object({
+    gameName: z
+      .string()
+      .trim()
+      .min(3, "El nombre del Riot ID debe tener 3 a 16 caracteres")
+      .max(16, "El nombre del Riot ID debe tener 3 a 16 caracteres")
+      .refine((v) => !v.includes("#"), "Escribe el nombre sin el #"),
+    tagLine: z
+      .string()
+      .trim()
+      .toUpperCase()
+      .regex(/^[A-Z0-9]{2,5}$/, "El tag del Riot ID debe tener 2 a 5 letras o números"),
+    position: z.enum(["TOP", "JUNGLE", "MID", "ADC", "SUPPORT", "SUB"], { message: "Selecciona una posición" }),
+    tier: z.enum(tiers).nullable().default(null),
+    division: z.coerce.number().int().min(1).max(4).nullable().default(null),
+    lp: z.coerce.number().int().min(0, "LP inválidos").max(3000, "LP inválidos").default(0),
+  })
+  .transform((v) => {
+    // Sin rango → sin división ni LP; Maestro+ no tiene división; el resto exige división
+    if (!v.tier) return { ...v, division: null, lp: 0 };
+    if (apexTiers.has(v.tier)) return { ...v, division: null };
+    return { ...v, division: v.division ?? 4, lp: Math.min(v.lp, 99) };
+  });
 export const deleteTeamSchema = z.object({ confirmName: z.string().trim().min(1, "Escribe el nombre del equipo para confirmar") });
 export const joinTeamSchema = z.object({ inviteCode: z.string().trim().toUpperCase().min(6, "Código inválido").max(12) });
 

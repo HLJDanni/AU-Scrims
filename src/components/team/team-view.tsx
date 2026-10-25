@@ -1,6 +1,6 @@
 "use client";
 import { motion } from "framer-motion";
-import { AlertTriangle, BarChart3, Copy, KeyRound, LogOut, RefreshCw, Settings, ShieldCheck, Trash2, UserMinus, Users } from "lucide-react";
+import { AlertTriangle, BarChart3, Swords, Copy, KeyRound, LogOut, RefreshCw, Settings, ShieldCheck, Trash2, UserMinus, Users } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import useSWR from "swr";
@@ -12,12 +12,14 @@ import { Tabs, TabPanel } from "../ui/tabs";
 import { EmptyState, PageHeader, RoleBadge, Skeleton, StatCard, TeamEmblem } from "../ui/misc";
 import { Button } from "../ui/button";
 import { Modal } from "../ui/modal";
+import { PlayersTab } from "./players-tab";
 import { useShell } from "../app-shell";
 
 type TeamData = {
-  team: { id: string; name: string; tag: string; color: string; region: string; rating: number; createdAt: string; inviteCode: string };
+  team: { id: string; name: string; tag: string; color: string; region: string; rating: number; description: string | null; createdAt: string; inviteCode: string };
   members: { id: string; username: string; role: Role; createdAt: string }[];
   canManage: boolean;
+  canManagePlayers: boolean;
   stats: {
     rank: number;
     scrimsPlayed: number;
@@ -29,11 +31,11 @@ type TeamData = {
   };
 };
 
-type Tab = "roster" | "invite" | "stats" | "settings";
+type Tab = "players" | "roster" | "invite" | "stats" | "settings";
 
 export function TeamView() {
   const { data, mutate } = useSWR<TeamData>("/api/team");
-  const [tab, setTab] = useState<Tab>("roster");
+  const [tab, setTab] = useState<Tab>("players");
 
   if (!data)
     return (
@@ -63,6 +65,7 @@ export function TeamView() {
         onChange={setTab}
         className="mb-6"
         tabs={[
+          { id: "players", label: "Jugadores", icon: <Swords className="h-4 w-4" /> },
           { id: "roster", label: "Staff", icon: <Users className="h-4 w-4" />, count: data.members.length },
           { id: "invite", label: "Invitación", icon: <KeyRound className="h-4 w-4" /> },
           { id: "stats", label: "Estadísticas", icon: <BarChart3 className="h-4 w-4" /> },
@@ -70,6 +73,7 @@ export function TeamView() {
         ]}
       />
       <TabPanel id={tab}>
+        {tab === "players" && <PlayersTab canEdit={data.canManagePlayers} />}
         {tab === "roster" && <Roster data={data} onChange={() => mutate()} />}
         {tab === "invite" && <Invite data={data} onChange={() => mutate()} />}
         {tab === "stats" && <Stats data={data} />}
@@ -239,9 +243,9 @@ function Stats({ data }: { data: TeamData }) {
 
 function TeamSettings({ data, onChange }: { data: TeamData; onChange: () => void }) {
   const router = useRouter();
-  const [form, setForm] = useState({ name: data.team.name, tag: data.team.tag, region: data.team.region, color: data.team.color });
+  const [form, setForm] = useState({ name: data.team.name, tag: data.team.tag, region: data.team.region, color: data.team.color, description: data.team.description ?? "" });
   const [saving, setSaving] = useState(false);
-  useEffect(() => setForm({ name: data.team.name, tag: data.team.tag, region: data.team.region, color: data.team.color }), [data.team]);
+  useEffect(() => setForm({ name: data.team.name, tag: data.team.tag, region: data.team.region, color: data.team.color, description: data.team.description ?? "" }), [data.team]);
 
   async function save(e: React.FormEvent) {
     e.preventDefault();
@@ -291,6 +295,20 @@ function TeamSettings({ data, onChange }: { data: TeamData; onChange: () => void
               />
             ))}
           </div>
+        </div>
+        <div className="sm:col-span-2">
+          <label htmlFor="team-description" className="label">
+            Descripción del equipo
+          </label>
+          <textarea
+            id="team-description"
+            className="field min-h-[96px] resize-y"
+            maxLength={400}
+            placeholder="Estilo de juego, objetivos, horarios habituales…"
+            value={form.description}
+            onChange={(e) => setForm({ ...form, description: e.target.value })}
+          />
+          <p className="mt-1 text-right text-[11px] text-stone-400">{form.description.length}/400 · la ven los rivales en el detalle del scrim</p>
         </div>
         <div className="sm:col-span-2">
           <Button type="submit" loading={saving}>

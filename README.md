@@ -45,6 +45,7 @@ Con el stack levantado: `npm test` (Vitest + Playwright). El detalle de cada pru
 ## Funcionalidades
 
 - **Roles:** Coach (además administra el roster, el código de invitación, los ajustes y puede **eliminar el equipo**), Analista y Capitán. Todos pueden agendar, responder y re-agendar.
+- **Jugadores:** cada equipo registra el Riot ID principal (no smurf), posición y rango de SoloQ de sus jugadores; el ELO promedio de los titulares, la descripción y los jugadores aparecen en el detalle de cada scrim con link a op.gg. Coach y capitán editan el roster.
 - **Equipos:** se crean al registrarse o desde el onboarding; los demás miembros se unen con un **código de invitación**.
 - **Calendario:** vistas Semana / Mes / Día / Agenda. Selecciona un bloque para agendar; **arrastra o estira** un scrim para re-agendarlo.
 - **Agendar:** rival, fecha, inicio/fin (chips de duración), **número de juegos** (1–10), **link de la sala** y notas.

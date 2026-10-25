@@ -41,9 +41,57 @@ function at(dayOffset, hour, minutes = 0) {
   return d;
 }
 
+// Jugadores ficticios (nicks inventados) y descripción por equipo
+const ROSTERS = {
+  AU: { desc: "Equipo académico de LAN enfocado en macro y control de objetivos. Scrims de lunes a viernes por la noche.", base: ["EMERALD", 1], names: ["Runeweaver", "Thornveil", "ArcaneLyric", "GoldenVolley", "Lanternkeep", "Sparkfrost"] },
+  HXW: { desc: "Agresivos en early game, prioridad de jungla y dragones. Buscamos rivales de Diamante+.", base: ["DIAMOND", 3], names: ["Cogsworth", "Packhunter", "Voltaic", "Ironfang", "Gearbloom", "Steamhowl"] },
+  NXV: { desc: "Draft flexible y teamfights 5v5. Preferimos bloques de 3 a 5 juegos.", base: ["EMERALD", 3], names: ["Bladeoath", "Crimsonpike", "Warbanner", "Ravenclad", "Ironmarch", "Bloodsigil"] },
+  VOID: { desc: "Roster nuevo de LAS en formación. Practicamos fearless draft.", base: ["PLATINUM", 1], names: ["Riftmaw", "Abyssal", "Hollowstar", "Kaisora", "Nullpoint", "Eclipsar"] },
+  FRF: { desc: "Estilo paciente, scaling y control de visión.", base: ["PLATINUM", 2], names: ["Frostpeak", "Glacius", "Iceward", "Winterhorn", "Snowtrail", "Pallidus"] },
+  ION: { desc: "Equipo de NA con jugadores de habla hispana. Horarios nocturnos.", base: ["EMERALD", 2], names: ["Lotusblade", "Spiritvine", "Petalstorm", "Moonharp", "Windwhisper", "Cherrydusk"] },
+  DMC: { desc: "Comunidad universitaria; buscamos scrims para mejorar comunicación.", base: ["GOLD", 1], names: ["Lightlance", "Shieldmaid", "Valorcrest", "Dawnguard", "Lionmane", "Silverwing"] },
+  SHR: { desc: "Equipo amateur de LAS, scrims los fines de semana.", base: ["GOLD", 3], names: ["Sunforged", "Dunewalker", "Ascendra", "Sandreaver", "Oasiseye", "Mirageon"] },
+};
+const POS = ["TOP", "JUNGLE", "MID", "ADC", "SUPPORT", "SUB"];
+const TIER_ORDER = ["IRON", "BRONZE", "SILVER", "GOLD", "PLATINUM", "EMERALD", "DIAMOND", "MASTER"];
+
+async function seedPlayers() {
+  if ((await db.player.count()) > 0) return;
+  const teams = await db.team.findMany();
+  let n = 0;
+  for (const t of teams) {
+    const r = ROSTERS[t.tag];
+    if (!r) continue;
+    if (!t.description) await db.team.update({ where: { id: t.id }, data: { description: r.desc } });
+    const [baseTier, baseDiv] = r.base;
+    for (let i = 0; i < 6; i++) {
+      // Variación de ±1 división alrededor del rango base del equipo
+      let tierIdx = TIER_ORDER.indexOf(baseTier);
+      let div = baseDiv + [0, -1, 1, 0, 1, 2][i];
+      if (div < 1) { tierIdx += 1; div += 4; }
+      if (div > 4) { tierIdx -= 1; div -= 4; }
+      const tier = TIER_ORDER[Math.max(0, tierIdx)];
+      await db.player.create({
+        data: {
+          teamId: t.id,
+          gameName: r.names[i],
+          tagLine: t.tag.slice(0, 3) + (i + 1),
+          position: POS[i],
+          tier,
+          division: tier === "MASTER" ? null : div,
+          lp: (i * 23 + t.tag.length * 11) % 100,
+        },
+      });
+      n++;
+    }
+  }
+  console.log(`[seed] ${n} jugadores demo agregados.`);
+}
+
 async function main() {
   if ((await db.team.count()) > 0) {
-    console.log("[seed] La base ya tiene datos, se omite.");
+    console.log("[seed] La base ya tiene equipos, se omite la carga inicial.");
+    await seedPlayers();
     return;
   }
   console.log("[seed] Creando datos de demostración…");
@@ -165,6 +213,7 @@ async function main() {
     },
   });
 
+  await seedPlayers();
   console.log(`[seed] Listo. Usuarios: coach.au / analyst.au / cap.au (y así por cada tag). Contraseña: SEED_PASSWORD`);
 }
 

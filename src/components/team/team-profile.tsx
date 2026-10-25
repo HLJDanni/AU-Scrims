@@ -1,0 +1,144 @@
+"use client";
+import { motion } from "framer-motion";
+import { ExternalLink, Users } from "lucide-react";
+import useSWR from "swr";
+import { POSITIONS, formatRank, tierMeta, type LolTier, type Position } from "@/lib/lol";
+import { cn } from "@/lib/client";
+import { Skeleton, TeamEmblem } from "../ui/misc";
+
+export type PlayerDTO = {
+  id: string;
+  gameName: string;
+  tagLine: string;
+  riotId: string;
+  position: Position;
+  tier: LolTier | null;
+  division: number | null;
+  lp: number;
+  opgg: string;
+};
+
+export type TeamProfile = {
+  team: { id: string; name: string; tag: string; color: string; region: string; rating: number; description: string | null };
+  players: PlayerDTO[];
+  eloAverage: { label: string; color: string; count: number } | null;
+};
+
+export function RankLabel({ tier, division, lp, className }: { tier: LolTier | null; division: number | null; lp: number; className?: string }) {
+  const color = tier ? tierMeta(tier).color : "#7B7A72";
+  return (
+    <span className={cn("inline-flex items-center gap-1.5 text-xs font-semibold", className)} style={{ color }}>
+      <span className="h-2 w-2 rotate-45 border" style={{ borderColor: color, background: `${color}55` }} />
+      {formatRank(tier, division, lp)}
+      {tier && tierMeta(tier).divisions && <span className="font-normal text-stone-400">{lp} LP</span>}
+    </span>
+  );
+}
+
+export function PositionBadge({ position }: { position: Position }) {
+  const p = POSITIONS.find((x) => x.id === position)!;
+  return (
+    <span
+      className={cn(
+        "inline-flex w-10 justify-center rounded border py-0.5 text-[10px] font-bold tracking-wider",
+        position === "SUB" ? "border-void-500 text-stone-400" : "border-gold-500/60 bg-gold-700/20 text-gold-100",
+      )}
+    >
+      {p.short}
+    </span>
+  );
+}
+
+export function EloAverageBadge({ elo }: { elo: TeamProfile["eloAverage"] }) {
+  return (
+    <div className="shrink-0 whitespace-nowrap rounded-md border border-void-500 bg-void-950/60 px-3 py-2 text-right">
+      <p className="text-[10px] uppercase tracking-wider text-stone-400">ELO promedio</p>
+      {elo ? (
+        <>
+          <p className="font-display text-sm font-bold" style={{ color: elo.color }}>
+            {elo.label}
+          </p>
+          <p className="text-[10px] text-stone-400">{elo.count} jugadores con rango</p>
+        </>
+      ) : (
+        <p className="text-sm text-stone-400">Sin datos</p>
+      )}
+    </div>
+  );
+}
+
+/** Lista de jugadores: Riot ID principal, posición, rango y link a op.gg. */
+export function PlayerList({ players, actions }: { players: PlayerDTO[]; actions?: (p: PlayerDTO) => React.ReactNode }) {
+  if (!players.length)
+    return (
+      <p className="flex items-center gap-2 rounded-md border border-dashed border-void-500 p-4 text-sm text-stone-400">
+        <Users className="h-4 w-4" /> Aún no hay jugadores registrados.
+      </p>
+    );
+  return (
+    <ul className="divide-y divide-void-500/40 overflow-hidden rounded-md border border-void-500/60 bg-void-950/40">
+      {players.map((p, i) => (
+        <motion.li
+          key={p.id}
+          initial={{ opacity: 0, x: -6 }}
+          animate={{ opacity: 1, x: 0 }}
+          transition={{ delay: Math.min(i, 8) * 0.03, duration: 0.18 }}
+          className="group flex items-center gap-3 px-3 py-2.5"
+        >
+          <PositionBadge position={p.position} />
+          <div className="min-w-0 flex-1">
+            <p className="truncate text-sm font-semibold text-gold-50">
+              {p.gameName}
+              <span className="font-normal text-stone-400">#{p.tagLine}</span>
+            </p>
+            <RankLabel tier={p.tier} division={p.division} lp={p.lp} />
+          </div>
+          <a
+            href={p.opgg}
+            target="_blank"
+            rel="noopener noreferrer"
+            title="Ver en op.gg"
+            className="flex items-center gap-1 rounded px-2 py-1 text-[11px] text-stone-400 transition-colors duration-100 hover:bg-void-700 hover:text-hex-100"
+          >
+            op.gg <ExternalLink className="h-3 w-3" />
+          </a>
+          {actions?.(p)}
+        </motion.li>
+      ))}
+    </ul>
+  );
+}
+
+/** Tarjeta compacta del equipo para el detalle del scrim. */
+export function TeamProfileCard({ teamId, label }: { teamId: string; label: string }) {
+  const { data } = useSWR<TeamProfile>(`/api/teams/${teamId}/profile`);
+  if (!data) return <Skeleton className="h-48" />;
+  const starters = data.players.filter((p) => p.position !== "SUB");
+  const subs = data.players.filter((p) => p.position === "SUB");
+  return (
+    <div className="rounded-md border border-void-500/60 bg-void-950/40 p-4">
+      <div className="mb-3 flex items-start justify-between gap-3">
+        <div className="flex min-w-0 items-center gap-3">
+          <TeamEmblem team={data.team} size={38} />
+          <div className="min-w-0">
+            <p className="text-[10px] uppercase tracking-wider text-hex-200">{label}</p>
+            <p className="truncate font-semibold text-gold-50">{data.team.name}</p>
+          </div>
+        </div>
+        <EloAverageBadge elo={data.eloAverage} />
+      </div>
+      <p className={cn("mb-3 whitespace-pre-wrap text-sm", data.team.description ? "text-stone-300" : "italic text-stone-400")}>
+        {data.team.description || "Este equipo aún no tiene descripción."}
+      </p>
+      <PlayerList players={starters} />
+      {subs.length > 0 && (
+        <details className="mt-2 group">
+          <summary className="cursor-pointer select-none text-xs text-stone-400 hover:text-gold-100">Suplentes ({subs.length})</summary>
+          <div className="mt-2">
+            <PlayerList players={subs} />
+          </div>
+        </details>
+      )}
+    </div>
+  );
+}
