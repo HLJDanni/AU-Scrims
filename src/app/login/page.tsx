@@ -33,13 +33,14 @@ function LoginForm() {
   return (
     <form onSubmit={submit} className="space-y-5">
       <div>
-        <label className="label">Usuario o correo</label>
-        <input className="field" autoComplete="username" autoFocus required value={identifier} onChange={(e) => setIdentifier(e.target.value)} />
+        <label htmlFor="identifier" className="label">Usuario o correo</label>
+        <input id="identifier" className="field" autoComplete="username" autoFocus required value={identifier} onChange={(e) => setIdentifier(e.target.value)} />
       </div>
       <div>
-        <label className="label">Contraseña</label>
+        <label htmlFor="password" className="label">Contraseña</label>
         <div className="relative">
           <input
+            id="password"
             className="field pr-10"
             type={show ? "text" : "password"}
             autoComplete="current-password"

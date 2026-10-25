@@ -38,6 +38,10 @@ npm run db:seed
 npm run dev
 ```
 
+## Pruebas
+
+Con el stack levantado: `npm test` (Vitest + Playwright). El detalle de cada prueba y la validación de los criterios de aceptación están en [docs/PRUEBAS.md](docs/PRUEBAS.md).
+
 ## Funcionalidades
 
 - **Roles:** Coach (además administra el roster, el código de invitación y los ajustes del equipo), Analista y Capitán. Todos pueden agendar, responder y re-agendar.

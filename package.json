@@ -9,7 +9,12 @@
     "typecheck": "tsc --noEmit",
     "db:migrate": "prisma migrate dev",
     "db:deploy": "prisma migrate deploy",
-    "db:seed": "node prisma/seed.mjs"
+    "db:seed": "node prisma/seed.mjs",
+    "test": "vitest run && playwright test",
+    "test:unit": "vitest run tests/unit tests/whitebox",
+    "test:blackbox": "vitest run tests/blackbox",
+    "test:integration": "vitest run tests/integration",
+    "test:e2e": "playwright test"
   },
   "prisma": {
     "seed": "node prisma/seed.mjs"
@@ -37,6 +42,7 @@
     "zod": "3.24.1"
   },
   "devDependencies": {
+    "@playwright/test": "^1.49.1",
     "@types/bcryptjs": "2.4.6",
     "@types/node": "22.10.5",
     "@types/react": "19.0.4",
@@ -45,6 +51,7 @@
     "postcss": "8.4.49",
     "prisma": "6.2.1",
     "tailwindcss": "3.4.17",
-    "typescript": "5.7.2"
+    "typescript": "5.7.2",
+    "vitest": "^2.1.8"
   }
 }
