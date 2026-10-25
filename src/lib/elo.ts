@@ -15,6 +15,23 @@ export function eloDelta(ratingA: number, ratingB: number, winsA: number, winsB:
   return Math.round(K * weight * (actual - expected));
 }
 
+/** Probabilidad (0-1) que el sistema le da al equipo A de ganar cada juego. */
+export function expectedScore(ratingA: number, ratingB: number) {
+  return 1 / (1 + 10 ** ((ratingB - ratingA) / SCALE));
+}
+
+/**
+ * Puntos en juego para el equipo A en un scrim de `games` juegos, para cada marcador posible
+ * (de ganarlos todos a perderlos todos). Usa la misma fórmula que se aplica al registrar el resultado.
+ */
+export function pointsAtStake(ratingA: number, ratingB: number, games: number) {
+  return Array.from({ length: games + 1 }, (_, i) => {
+    const mine = games - i;
+    const theirs = i;
+    return { mine, theirs, delta: eloDelta(ratingA, ratingB, mine, theirs) };
+  });
+}
+
 export const TIERS = [
   { min: 9000, name: "Retador", color: "#F4C874", icon: "CHALLENGER" },
   { min: 8500, name: "Gran Maestro", color: "#E84057", icon: "GRANDMASTER" },

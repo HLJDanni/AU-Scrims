@@ -1,6 +1,6 @@
 # Plan y resultados de pruebas · AU Scrims
 
-**Fecha de ejecución:** 24/10/2026 · **Entorno:** Docker local (app `:3000`, PostgreSQL `:5434`), datos demo · **Resultado global:** 25/25 pruebas automatizadas aprobadas
+**Fecha de ejecución:** 24/10/2026 · **Entorno:** Docker local (app `:3000`, PostgreSQL `:5434`), datos demo · **Resultado global:** 26/26 pruebas automatizadas aprobadas
 
 ## Cómo ejecutarlas
 
@@ -29,6 +29,7 @@ Las pruebas de caja negra, integración y E2E usan los usuarios demo y limpian l
 | Unitaria | U7 | `tests/unit/lol.test.ts` | Link de op.gg: acepta formatos actual, antiguo y con idioma; extrae región y Riot ID; normaliza; rechaza u.gg, rutas que no son perfiles, regiones desconocidas y links sin tag | ✅ |
 | Unitaria | U8 | `tests/unit/riot.test.ts` | Cliente de la API de Riot con respuestas simuladas: rango de SoloQ (ignora Flex), Maestro sin división, sin rango, enrutamiento LAN → `americas`/`la1`, clave en cabecera y errores 404/403/429 y sin clave | ✅ |
 | Unitaria | R1 | `tests/unit/reminders.test.ts` | Avisos de inicio: umbrales de 15, 10 y 5 min (límites incluidos), nada antes de 15 min ni después de empezar, clave distinta al re-agendar y cuenta regresiva | ✅ |
+| Unitaria | U10 | `tests/unit/elo.test.ts` | Puntos en juego: cada marcador posible con los mismos valores que aplica el servidor (iguales, 400 arriba y 400 abajo) y probabilidad esperada | ✅ |
 | Unitaria | S1 | `tests/unit/swiss.test.ts` | Motor suizo: ronda 1 por siembra, Bo3 en partidos decisivos, descanso con impares (una vez por equipo), torneos de 4 a 16 equipos terminan en ≤5 partidos por equipo y nunca hay revancha si existía alternativa | ✅ |
 | Unitaria | S2 | `tests/unit/swiss.test.ts` | Elegibilidad: Barón (Maestro+), Heraldo (Platino II–Diamante I, límites incluidos), rechazo por rating, victorias, roster o ELO; suplentes fuera del promedio | ✅ |
 | Caja blanca | W1 | `tests/whitebox/scrim-dto.test.ts` | `toDTO`: ramas anfitrión/invitado (marcador y delta invertidos), valores nulos | ✅ |
@@ -107,6 +108,7 @@ Además de las pruebas automatizadas, se hizo una verificación manual de los en
 | CA-24 | Rol "Leyendas": ve bracket de torneos, ranking y equipos inscritos, pero no los jugadores; solo ve datos de su equipo y no agenda | I5, U5 (registro sin equipo); menú reducido y vistas de solo lectura revisadas en el navegador | ✅ Cumple |
 | CA-25 | Los Riot ID / op.gg de otros equipos solo los ven coaches y analistas con un scrim mutuo | I5 | ✅ Cumple |
 | CA-26 | Aviso estilo Teams a los 15, 10 y 5 minutos del inicio de un scrim, con la temática de la app | R1, E2; revisado en el navegador con `npm run simulate:upcoming` (sonido, botón de sala, invitación y aviso del escritorio opcional) | ✅ Cumple |
+| CA-27 | Vista previa de los puntos de ranking en juego al agendar, en el detalle del scrim y al registrar el resultado | U10; revisado en el navegador (formulario con rival elegido, detalle de un scrim confirmado y registro de un 1-1) | ✅ Cumple |
 
 ## Hallazgos corregidos durante las pruebas
 

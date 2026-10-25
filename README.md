@@ -52,6 +52,7 @@ Con el stack levantado: `npm test` (Vitest + Playwright). El detalle de cada pru
 - **Re-agenda:** si tu solicitud aún está pendiente se mueve directamente; si ya fue confirmada (o la propone el invitado), se crea una **propuesta** que el otro equipo aprueba o rechaza. Las propuestas se ven en el calendario como bloque punteado.
 - **Detalle del scrim** (panel lateral con pestañas): Detalles · Sala (editar link, copiar invitación lista para los jugadores) · Actividad (bitácora).
 - **Choques de horario:** no se permite que un equipo tenga dos scrims activos que se crucen.
+- **Puntos en juego:** al elegir rival, en el detalle de cada scrim y al registrar el marcador se muestra cuántos puntos gana o pierde el equipo con cada resultado posible (misma fórmula que el servidor).
 - **Resultados y ranking:** al registrar el marcador se actualiza el rating Elo de ambos equipos (K=32, ponderado por juegos jugados). Divisiones de Hierro a Retador.
 - **Historial:** solo de tu equipo, con filtros (victorias, derrotas, cancelados) y récord contra cada rival.
 

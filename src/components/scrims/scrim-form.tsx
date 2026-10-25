@@ -13,6 +13,8 @@ import { Button } from "../ui/button";
 import { TeamEmblem } from "../ui/misc";
 import { RankIcon } from "../ui/rank-icon";
 import { EloFilter, type EloFilterValue } from "./elo-filter";
+import { PointsPreview } from "./points-preview";
+import { useShell } from "../app-shell";
 
 type RivalTeam = TeamLite & { elo: { tier: LolTier; label: string; color: string } | null };
 
@@ -40,6 +42,9 @@ export function ScrimForm({
   scrim?: ScrimDTO;
 }) {
   const reschedule = Boolean(scrim);
+  const { user } = useShell();
+  // Rating actual de mi equipo (el del menú puede estar desactualizado si se registró un resultado)
+  const { data: mine } = useSWR<{ team: { rating: number } }>(open ? "/api/team" : null);
   const [opponentId, setOpponentId] = useState("");
   const [query, setQuery] = useState("");
   const [elo, setElo] = useState<EloFilterValue>("ANY");
@@ -270,6 +275,12 @@ export function ScrimForm({
             ))}
           </div>
         </section>
+
+        {(() => {
+          const rival = reschedule ? scrim!.opponent : data?.teams.find((t) => t.id === opponentId);
+          const myRating = reschedule ? scrim!.myTeam.rating : (mine?.team.rating ?? user.team?.rating);
+          return rival && myRating != null ? <PointsPreview myRating={myRating} rivalRating={rival.rating} games={games} rivalTag={rival.tag} /> : null;
+        })()}
 
         {!reschedule && (
           <section className="grid gap-4">

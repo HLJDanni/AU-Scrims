@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { BASE_RATING, eloDelta, tierFor } from "@/lib/elo";
+import { BASE_RATING, eloDelta, expectedScore, pointsAtStake, tierFor } from "@/lib/elo";
 
 describe("Unitarias · Elo y divisiones", () => {
   it("U1 · con ratings iguales, ganar todos los juegos suma puntos y perder todos resta lo mismo", () => {
@@ -30,5 +30,22 @@ describe("Unitarias · Elo y divisiones", () => {
     expect(tierFor(7000).name).toBe("Esmeralda");
     expect(tierFor(7500).name).toBe("Diamante");
     expect(tierFor(12000).name).toBe("Retador");
+  });
+
+  it("U10 · puntos en juego: mismos valores que se aplicarán al registrar cada marcador posible", () => {
+    // Mismo rating, 3 juegos: 3-0 +96 · 2-1 +32 · 1-2 −32 · 0-3 −96
+    expect(pointsAtStake(6000, 6000, 3).map((o) => [`${o.mine}-${o.theirs}`, o.delta])).toEqual([
+      ["3-0", 96],
+      ["2-1", 32],
+      ["1-2", -32],
+      ["0-3", -96],
+    ]);
+    // 400 por encima: el sistema espera ~61 % y ganar vale menos que perder
+    expect(Math.round(expectedScore(6200, 5800) * 100)).toBe(61);
+    expect(pointsAtStake(6200, 5800, 3).map((o) => o.delta)).toEqual([74, 10, -54, -118]);
+    expect(pointsAtStake(5800, 6200, 3).map((o) => o.delta)).toEqual([118, 54, -10, -74]);
+    // Coincide con lo que calcula el servidor para cada marcador
+    for (const o of pointsAtStake(6150, 5980, 5)) expect(o.delta).toBe(eloDelta(6150, 5980, o.mine, o.theirs));
+    expect(pointsAtStake(6000, 6000, 1)).toHaveLength(2); // Bo1: 1-0 o 0-1
   });
 });

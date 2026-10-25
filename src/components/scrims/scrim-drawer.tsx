@@ -32,6 +32,7 @@ import { useShell } from "../app-shell";
 import { scrimState, useScrimActions } from "./use-scrim-actions";
 import { TeamProfileCard } from "../team/team-profile";
 import { scrimInvite } from "@/lib/invite";
+import { PointsPreview, ResultPoints } from "./points-preview";
 
 type Tab = "details" | "room" | "activity";
 
@@ -192,6 +193,10 @@ function DetailsTab({ scrim, onChanged }: { scrim: ScrimDTO; onChanged: () => vo
         )}
       </div>
 
+      {(scrim.status === "PENDING" || scrim.status === "CONFIRMED") && !st.canReport && (
+        <PointsPreview myRating={scrim.myTeam.rating} rivalRating={scrim.opponent.rating} games={scrim.games} rivalTag={scrim.opponent.tag} />
+      )}
+
       <section className="space-y-3">
         <h3 className="flex items-center gap-2 text-[11px] font-semibold uppercase tracking-[0.18em] text-gold-200">
           <Users className="h-3.5 w-3.5" /> Equipos
@@ -263,6 +268,16 @@ function ResultForm({ scrim, busy, onSubmit }: { scrim: ScrimDTO; busy: boolean;
       <p className="mt-3 text-center text-xs text-stone-400">
         {total}/{scrim.games} juegos registrados · actualiza el ranking de ambos equipos
       </p>
+      <div className="mt-2">
+        <ResultPoints
+          myRating={scrim.myTeam.rating}
+          rivalRating={scrim.opponent.rating}
+          mine={mine}
+          theirs={theirs}
+          myTag={scrim.myTeam.tag}
+          rivalTag={scrim.opponent.tag}
+        />
+      </div>
       <Button className="mt-3 w-full" disabled={total === 0} loading={busy} onClick={() => onSubmit(mine, theirs)}>
         Guardar resultado
       </Button>

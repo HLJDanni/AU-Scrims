@@ -59,7 +59,8 @@ function chime(stage: ReminderStage) {
   } catch {}
 }
 
-export function ScrimReminders() {
+/** `shifted`: el panel de detalle (max-w-xl, a la derecha) está abierto; el aviso se corre a su izquierda. */
+export function ScrimReminders({ shifted = false }: { shifted?: boolean }) {
   const { openDetail } = useShell();
   const { data } = useSWR<{ scrims: ScrimDTO[] }>("/api/scrims?scope=upcoming", { refreshInterval: 60_000 });
   const [now, setNow] = useState(() => Date.now());
@@ -130,7 +131,14 @@ export function ScrimReminders() {
   }
 
   return (
-    <div aria-live="polite" className="pointer-events-none fixed bottom-4 right-4 z-[60] flex w-[min(380px,calc(100vw-2rem))] flex-col gap-3">
+    <div
+      aria-live="polite"
+      className={cn(
+        "pointer-events-none fixed bottom-4 right-4 flex w-[min(380px,calc(100vw-2rem))] flex-col gap-3 transition-[right] duration-200",
+        // Con el panel abierto: a su lado en pantallas anchas; debajo de él en las angostas (ocupa todo el ancho)
+        shifted ? "z-40 lg:right-[37rem] lg:z-[60]" : "z-[60]",
+      )}
+    >
       <AnimatePresence initial={false}>
         {active.slice(0, 3).map((r) => (
           <ReminderCard

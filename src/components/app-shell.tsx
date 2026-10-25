@@ -137,7 +137,7 @@ export function AppShell({ user, children }: { user: ShellUser; children: React.
           onClose={() => setForm((f) => ({ ...f, open: false }))}
         />
         <ScrimDrawer id={detailId} onClose={() => setDetailId(null)} />
-        {user.team && <ScrimReminders />}
+        {user.team && <ScrimReminders shifted={Boolean(detailId)} />}
       </ShellContext.Provider>
     </SWRConfig>
   );
