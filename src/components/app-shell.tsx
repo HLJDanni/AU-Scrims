@@ -2,7 +2,7 @@
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { AnimatePresence, motion } from "framer-motion";
-import { CalendarDays, Crown, LayoutDashboard, LogOut, Menu, Plus, Swords, Trophy, Users, X } from "lucide-react";
+import { CalendarDays, Crown, LayoutDashboard, LogOut, Menu, MessagesSquare, Plus, Swords, Trophy, Users, X } from "lucide-react";
 import { createContext, useContext, useState } from "react";
 import { SWRConfig } from "swr";
 import useSWR from "swr";
@@ -19,7 +19,7 @@ export type ShellUser = {
   id: string;
   username: string;
   role: Role;
-  team: { id: string; name: string; tag: string; color: string; region: string; rating: number } | null;
+  team: { id: string; name: string; tag: string; color: string; region: string; rating: number; logoUpdatedAt?: string | Date | null } | null;
 };
 
 type Ctx = {
@@ -41,7 +41,8 @@ export const useShell = () => {
 const NAV = [
   { href: "/dashboard", label: "Inicio", icon: LayoutDashboard, team: true, staff: true },
   { href: "/calendar", label: "Calendario", icon: CalendarDays, team: true },
-  { href: "/scrims", label: "Scrims", icon: Swords, badge: true, team: true },
+  { href: "/scrims", label: "Scrims", icon: Swords, badge: "requests", team: true },
+  { href: "/chat", label: "Chat", icon: MessagesSquare, badge: "chat", team: true },
   { href: "/leaderboard", label: "Ranking", icon: Trophy },
   { href: "/tournaments", label: "Torneos", icon: Crown },
   { href: "/team", label: "Mi equipo", icon: Users, team: true },
@@ -151,6 +152,8 @@ function Sidebar({ user, onNavigate }: { user: ShellUser; onNavigate?: () => voi
   const awaiting = (data?.scrims ?? []).filter(
     (s) => (s.status === "PENDING" && !s.isHost && !s.proposal) || (s.proposal && !s.proposal.byMe),
   ).length;
+  const { data: chats } = useSWR<{ unread: number }>(user.team ? "/api/chats" : null, { refreshInterval: 15_000 });
+  const badges: Record<string, number> = { requests: awaiting, chat: chats?.unread ?? 0 };
 
   async function logout() {
     await api("/api/auth/logout", { method: "POST" }).catch(() => null);
@@ -190,11 +193,11 @@ function Sidebar({ user, onNavigate }: { user: ShellUser; onNavigate?: () => voi
               {active && <motion.span layoutId="nav-bar" className="absolute left-0 top-2 bottom-2 w-[3px] rounded-r bg-gold-300 shadow-[0_0_10px_#C89B3C]" />}
               <Icon className={cn("relative h-[18px] w-[18px] transition-transform duration-200 group-hover:scale-110", active && "text-gold-200")} />
               <span className="relative">{item.label}</span>
-              {item.badge && awaiting > 0 && (
+              {item.badge && badges[item.badge] > 0 && (
                 <span className="relative ml-auto flex">
                   <span className="absolute inset-0 animate-ping rounded-full bg-hex-200/50" />
                   <span className="relative flex h-5 min-w-5 items-center justify-center rounded-full bg-hex-200 px-1.5 text-[10px] font-bold text-void-950">
-                    {awaiting}
+                    {badges[item.badge] > 99 ? "99+" : badges[item.badge]}
                   </span>
                 </span>
               )}

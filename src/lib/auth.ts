@@ -34,7 +34,7 @@ export async function getCurrentUser() {
       username: true,
       role: true,
       teamId: true,
-      team: { select: { id: true, name: true, tag: true, color: true, region: true, rating: true } },
+      team: { select: { id: true, name: true, tag: true, color: true, logoUpdatedAt: true, region: true, rating: true } },
     },
   });
 }

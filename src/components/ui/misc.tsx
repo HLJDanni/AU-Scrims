@@ -30,10 +30,17 @@ export function RoleBadge({ role }: { role: Role }) {
   );
 }
 
-/** Emblema hexagonal con el tag del equipo. */
-export function TeamEmblem({ team, size = 44, className }: { team: Pick<TeamLite, "tag" | "color">; size?: number; className?: string }) {
+const HEX_CLIP = "polygon(50% 3%, 93% 27%, 93% 73%, 50% 97%, 7% 73%, 7% 27%)";
+
+/** URL de la imagen del equipo (versionada por su fecha), o null si no tiene. */
+export function teamLogoUrl(team: Partial<Pick<TeamLite, "id" | "logoUpdatedAt">>) {
+  if (!team.id || !team.logoUpdatedAt) return null;
+  return `/api/teams/${team.id}/logo?v=${new Date(team.logoUpdatedAt).getTime()}`;
+}
+
+function TagHex({ team, size }: { team: Pick<TeamLite, "tag" | "color">; size: number }) {
   return (
-    <div className={cn("relative shrink-0", className)} style={{ width: size, height: size }}>
+    <>
       <svg viewBox="0 0 100 100" className="absolute inset-0 h-full w-full">
         <defs>
           <linearGradient id={`em-${team.tag}`} x1="0" y1="0" x2="1" y2="1">
@@ -49,6 +56,45 @@ export function TeamEmblem({ team, size = 44, className }: { team: Pick<TeamLite
       >
         {team.tag}
       </span>
+    </>
+  );
+}
+
+/**
+ * Emblema hexagonal del equipo. Con imagen, muestra la imagen y al pasar el cursor gira (como una moneda)
+ * para mostrar las siglas. `logoSrc` sirve para la vista previa de una imagen que aún no se guarda.
+ */
+export function TeamEmblem({
+  team,
+  size = 44,
+  className,
+  logoSrc,
+}: {
+  team: Pick<TeamLite, "tag" | "color"> & Partial<Pick<TeamLite, "id" | "logoUpdatedAt">>;
+  size?: number;
+  className?: string;
+  logoSrc?: string | null;
+}) {
+  const src = logoSrc ?? teamLogoUrl(team);
+  if (!src)
+    return (
+      <div className={cn("relative shrink-0", className)} style={{ width: size, height: size }}>
+        <TagHex team={team} size={size} />
+      </div>
+    );
+  return (
+    <div className={cn("group/emblem relative shrink-0 [perspective:600px]", className)} style={{ width: size, height: size }} title={team.tag}>
+      <div className="relative h-full w-full transition-transform duration-700 ease-[cubic-bezier(.22,1,.36,1)] [transform-style:preserve-3d] group-hover/emblem:[transform:rotateY(180deg)] motion-reduce:transition-none">
+        <div className="absolute inset-0 [backface-visibility:hidden]">
+          <img src={src} alt={team.tag} draggable={false} className="absolute inset-0 h-full w-full bg-void-900 object-cover" style={{ clipPath: HEX_CLIP }} />
+          <svg viewBox="0 0 100 100" className="absolute inset-0 h-full w-full">
+            <polygon points="50,3 93,27 93,73 50,97 7,73 7,27" fill="none" stroke={team.color} strokeWidth="4" />
+          </svg>
+        </div>
+        <div className="absolute inset-0 [backface-visibility:hidden] [transform:rotateY(180deg)]">
+          <TagHex team={team} size={size} />
+        </div>
+      </div>
     </div>
   );
 }

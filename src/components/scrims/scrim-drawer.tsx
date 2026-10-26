@@ -11,18 +11,21 @@ import {
   Info,
   Link2,
   MessageSquareShare,
+  MessagesSquare,
   Repeat2,
   ShieldCheck,
+  Swords,
   Trophy,
   User,
   Users,
   X,
 } from "lucide-react";
+import Link from "next/link";
 import { useEffect, useState } from "react";
 import useSWR from "swr";
 import { toast } from "sonner";
 import { api, cn, refreshScrims } from "@/lib/client";
-import type { ScrimDTO, ScrimEventDTO } from "@/lib/constants";
+import type { ChatSummaryDTO, ScrimDTO, ScrimEventDTO } from "@/lib/constants";
 import { durationLabel, fmtFull, fromNow } from "@/lib/dates";
 import { Modal } from "../ui/modal";
 import { Tabs, TabPanel } from "../ui/tabs";
@@ -59,6 +62,7 @@ export function ScrimDrawer({ id, onClose }: { id: string | null; onClose: () =>
       ) : (
         <div className="space-y-5">
           <Matchup scrim={scrim} />
+          <ChatShortcut scrim={scrim} onNavigate={onClose} />
           <Tabs<Tab>
             value={tab}
             onChange={setTab}
@@ -77,6 +81,36 @@ export function ScrimDrawer({ id, onClose }: { id: string | null; onClose: () =>
         </div>
       )}
     </Modal>
+  );
+}
+
+/** Accesos al chat y al draft del scrim (como "Chatear con los participantes" en Teams). */
+function ChatShortcut({ scrim, onNavigate }: { scrim: ScrimDTO; onNavigate: () => void }) {
+  const hasChat = scrim.status === "CONFIRMED" || scrim.status === "COMPLETED";
+  const { data } = useSWR<{ chats: ChatSummaryDTO[] }>(hasChat ? "/api/chats" : null);
+  if (!hasChat) {
+    if (scrim.status !== "PENDING") return null;
+    return (
+      <p className="flex items-center gap-2 rounded-md border border-dashed border-void-500 px-3 py-2 text-xs text-stone-400">
+        <MessagesSquare className="h-3.5 w-3.5" /> El chat con [{scrim.opponent.tag}] y el draft se abren cuando el scrim sea aceptado.
+      </p>
+    );
+  }
+  const unread = data?.chats.find((c) => c.scrim.id === scrim.id)?.unread ?? 0;
+  return (
+    <div className="grid grid-cols-2 gap-2">
+      <Link href={`/chat?scrim=${scrim.id}`} onClick={onNavigate}>
+        <Button variant="hex" className="w-full">
+          <MessagesSquare className="h-4 w-4" /> Abrir chat
+          {unread > 0 && <span className="rounded-full bg-hex-200 px-1.5 text-[10px] font-bold text-void-950">{unread}</span>}
+        </Button>
+      </Link>
+      <Link href={`/draft/${scrim.id}`} onClick={onNavigate}>
+        <Button className="w-full">
+          <Swords className="h-4 w-4" /> Draft
+        </Button>
+      </Link>
+    </div>
   );
 }
 

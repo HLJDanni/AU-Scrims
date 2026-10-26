@@ -21,6 +21,7 @@ export type PlayerDTO = {
   wins: number | null;
   losses: number | null;
   rankUpdatedAt: string | null;
+  account?: string | null;
 };
 
 export type TeamProfile = {
@@ -127,6 +128,11 @@ export function PlayerList({ players, actions, showAccount }: { players: PlayerD
             <p className="truncate text-sm font-semibold text-gold-50">
               {p.gameName}
               <span className="font-normal text-stone-400">#{p.tagLine}</span>
+              {p.account && (
+                <span title={`Cuenta de AU Scrims: ${p.account}`} className="ml-2 rounded border border-[#B57BFF]/50 bg-[#B57BFF]/10 px-1.5 py-px align-middle text-[9px] font-bold uppercase tracking-widest text-[#B57BFF]">
+                  Leyenda · {p.account}
+                </span>
+              )}
             </p>
             <RankLabel tier={p.tier} division={p.division} lp={p.lp} />
             {showAccount ? <AccountInfo p={p} /> : lowAccount(p) && <AccountInfo p={p} />}

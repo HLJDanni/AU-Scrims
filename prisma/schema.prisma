@@ -73,22 +73,29 @@ model User {
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
 
-  scrimsCreated Scrim[]      @relation("ScrimCreatedBy")
+  scrimsCreated Scrim[]        @relation("ScrimCreatedBy")
   events        ScrimEvent[]
+  messages      ScrimMessage[]
+  chatReads     ChatRead[]
+  player        Player? // Leyenda que se unió como jugador con su op.gg
 
   @@index([teamId])
 }
 
 model Team {
-  id          String   @id @default(cuid())
-  name        String   @unique
-  tag         String   @unique
-  region      String   @default("LAN")
-  color       String   @default("#C8AA6E")
-  inviteCode  String   @unique
-  rating      Int      @default(0)
-  description String?
-  createdAt   DateTime @default(now())
+  id            String    @id @default(cuid())
+  name          String    @unique
+  tag           String    @unique
+  region        String    @default("LAN")
+  color         String    @default("#C8AA6E")
+  inviteCode    String    @unique
+  rating        Int       @default(0)
+  description   String?
+  // Imagen del equipo (PNG, JPEG o WebP ya recortada a 256 px). Se guarda en la BD porque Render no tiene disco persistente
+  logo          Bytes?
+  logoType      String?
+  logoUpdatedAt DateTime? // versión de la imagen: cambia la URL para que el navegador no use la anterior
+  createdAt     DateTime  @default(now())
 
   members              User[]
   players              Player[]
@@ -99,6 +106,7 @@ model Team {
   scrimsHome           Scrim[]           @relation("RequesterTeam")
   scrimsAway           Scrim[]           @relation("OpponentTeam")
   proposalsMade        Scrim[]           @relation("ProposalTeam")
+  messages             ScrimMessage[]
 }
 
 model Scrim {
@@ -133,7 +141,14 @@ model Scrim {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  events ScrimEvent[]
+  // Draft de la serie (se configura desde el chat del scrim)
+  draftFearless Boolean @default(false) // los campeones elegidos en un juego no se repiten en la serie
+  draftTimer    Boolean @default(true) // 30 s por acción, como en el Mundial
+
+  events     ScrimEvent[]
+  messages   ScrimMessage[]
+  chatReads  ChatRead[]
+  draftGames DraftGame[]
 
   @@index([requesterTeamId, startAt])
   @@index([opponentTeamId, startAt])
@@ -153,11 +168,69 @@ model ScrimEvent {
   @@index([scrimId, createdAt])
 }
 
+// Chat del scrim entre el staff de ambos equipos (se abre al aceptarse)
+model ScrimMessage {
+  id        String   @id @default(cuid())
+  scrimId   String
+  scrim     Scrim    @relation(fields: [scrimId], references: [id], onDelete: Cascade)
+  authorId  String?
+  author    User?    @relation(fields: [authorId], references: [id], onDelete: SetNull)
+  teamId    String?
+  team      Team?    @relation(fields: [teamId], references: [id], onDelete: SetNull)
+  system    Boolean  @default(false) // avisos automáticos (scrim aceptado, draft, resultados)
+  body      String
+  createdAt DateTime @default(now())
+
+  @@index([scrimId, createdAt])
+}
+
+// Hasta dónde leyó cada usuario un chat (para los no leídos)
+model ChatRead {
+  userId     String
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  scrimId    String
+  scrim      Scrim    @relation(fields: [scrimId], references: [id], onDelete: Cascade)
+  lastReadAt DateTime @default(now())
+
+  @@id([userId, scrimId])
+}
+
+enum DraftStatus {
+  READY_CHECK // lados elegidos, esperando que ambos equipos estén listos
+  DRAFTING
+  DONE
+}
+
+// Un juego de la serie con su draft (orden profesional: 6 baneos, 6 picks, 4 baneos, 4 picks)
+model DraftGame {
+  id           String      @id @default(cuid())
+  scrimId      String
+  scrim        Scrim       @relation(fields: [scrimId], references: [id], onDelete: Cascade)
+  number       Int
+  blueTeamId   String
+  redTeamId    String
+  sideChosenBy String // equipo que eligió el lado
+  status       DraftStatus @default(READY_CHECK)
+  blueReady    Boolean     @default(false)
+  redReady     Boolean     @default(false)
+  actions      Json        @default("[]") // id del campeón (o null si no baneó) en el orden del draft
+  step         Int         @default(0)
+  hover        String? // campeón que el equipo en turno tiene seleccionado sin confirmar
+  turnEndsAt   DateTime?
+  winnerTeamId String?
+  createdAt    DateTime    @default(now())
+  updatedAt    DateTime    @updatedAt
+
+  @@unique([scrimId, number])
+}
+
 // Jugadores de LoL del equipo (no son usuarios de la plataforma). Se guarda su cuenta principal.
 model Player {
   id            String    @id @default(cuid())
   teamId        String
   team          Team      @relation(fields: [teamId], references: [id], onDelete: Cascade)
+  userId        String?   @unique // cuenta de AU Scrims del jugador (Leyenda unida con código)
+  user          User?     @relation(fields: [userId], references: [id], onDelete: SetNull)
   gameName      String
   tagLine       String
   opggUrl       String // perfil de op.gg (obligatorio al registrar)

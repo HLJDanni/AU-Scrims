@@ -2,15 +2,7 @@ import { db } from "@/lib/db";
 import { fail, parseBody, withTeam } from "@/lib/api";
 import { playerSchema } from "@/lib/validators";
 import { riotEnabled } from "@/lib/riot";
-import {
-  assertPlayerAllowed,
-  assertSameRegion,
-  canManagePlayers,
-  getTeamProfile,
-  loadRankedProfile,
-  playerDTO,
-  rankedFields,
-} from "@/lib/players";
+import { canManagePlayers, getTeamProfile, playerDTO, preparePlayer } from "@/lib/players";
 
 export const GET = withTeam(async ({ user }) => getTeamProfile(user.teamId));
 
@@ -20,11 +12,7 @@ export const GET = withTeam(async ({ user }) => getTeamProfile(user.teamId));
  */
 export const POST = withTeam(async ({ req, user }) => {
   if (!canManagePlayers(user.role)) fail(403, "Solo el coach o el capitán pueden editar el roster");
-  const { opggRegion, ...data } = await parseBody(req, playerSchema);
-  assertSameRegion(opggRegion, user.team.region);
-  await assertPlayerAllowed(user.teamId, data);
-
-  const ranked = riotEnabled() ? rankedFields(await loadRankedProfile(opggRegion, data.gameName, data.tagLine)) : {};
-  const player = await db.player.create({ data: { ...data, ...ranked, teamId: user.teamId } });
+  const input = await parseBody(req, playerSchema);
+  const player = await db.player.create({ data: await preparePlayer(user.team, input) });
   return { player: playerDTO(player), rankSync: riotEnabled() };
 });

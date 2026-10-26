@@ -98,6 +98,14 @@ describe("Integración · roster de jugadores", () => {
     expect(edited.status).toBe(200);
     expect(edited.body.player.position).toBe("SUB");
 
+    // Máximo 3 suplentes: con el editado y dos más, un cuarto se rechaza (antes de consultar a Riot)
+    for (const i of [1, 2])
+      await db.player.create({ data: { teamId, gameName: `Suplente${i}`, tagLine: `S${sfx}`, opggUrl: kr(`Suplente${i}`, `S${sfx}`), position: "SUB" } });
+    const fourth = await cap.post("/api/team/players", { ...mid, opgg: kr("CuartoSup", "KR9"), position: "SUB" });
+    expect(fourth.status).toBe(409);
+    expect(fourth.body.error).toMatch(/3 suplentes/);
+    await db.player.deleteMany({ where: { teamId, gameName: { startsWith: "Suplente" } } });
+
     // Otro equipo: no puede editarlo; ve el ELO promedio pero no los jugadores (no hay scrim entre ambos)
     expect((await other.req("DELETE", `/api/team/players/${created.body.player.id}`)).status).toBe(404);
     const profile = await other.get(`/api/teams/${teamId}/profile`);

@@ -24,9 +24,16 @@ export const teamFields = {
     .default("#C8AA6E"),
 };
 
-export const createTeamSchema = z.object(teamFields);
+// Imagen como data URL; el servidor revisa tipo y tamaño reales (ver lib/logo.ts)
+const logo = z.string().max(300_000, "La imagen es demasiado pesada (máximo 200 KB)").startsWith("data:image/", "Formato de imagen inválido");
+
+export const createTeamSchema = z.object({ ...teamFields, logo: logo.optional() });
 export const updateTeamSchema = z
-  .object({ ...teamFields, description: z.string().trim().max(400, "Máximo 400 caracteres").nullable().transform((v) => v || null) })
+  .object({
+    ...teamFields,
+    description: z.string().trim().max(400, "Máximo 400 caracteres").nullable().transform((v) => v || null),
+    logo: logo.nullable(), // null quita la imagen
+  })
   .partial();
 
 
@@ -57,7 +64,11 @@ export const playerSchema = z
     opggRegion: opgg.region,
   }));
 export const deleteTeamSchema = z.object({ confirmName: z.string().trim().min(1, "Escribe el nombre del equipo para confirmar") });
-export const joinTeamSchema = z.object({ inviteCode: z.string().trim().toUpperCase().min(6, "Código inválido").max(12) });
+// La Leyenda que se une con código entra también al roster: se pide su op.gg y su posición
+export const joinTeamSchema = z.object({
+  inviteCode: z.string().trim().toUpperCase().min(6, "Código inválido").max(12),
+  player: playerSchema.optional(),
+});
 
 export const registerSchema = z
   .object({
@@ -73,12 +84,14 @@ export const registerSchema = z
     mode: z.enum(["create", "join", "none"]),
     team: createTeamSchema.optional(),
     inviteCode: z.string().trim().toUpperCase().optional(),
+    player: playerSchema.optional(),
   })
   .superRefine((v, ctx) => {
     if (v.mode === "create" && v.role === "LEGEND") ctx.addIssue({ code: "custom", message: "Una Leyenda no puede crear equipos; únete con un código o entra sin equipo" });
     if (v.mode === "none" && v.role !== "LEGEND") ctx.addIssue({ code: "custom", message: "El staff debe crear un equipo o unirse a uno" });
     if (v.mode === "create" && !v.team) ctx.addIssue({ code: "custom", message: "Completa los datos del equipo" });
     if (v.mode === "join" && !v.inviteCode) ctx.addIssue({ code: "custom", message: "Ingresa el código de invitación" });
+    if (v.mode === "join" && v.role === "LEGEND" && !v.player) ctx.addIssue({ code: "custom", message: "Agrega tu link de op.gg para unirte al roster del equipo" });
   });
 
 export const loginSchema = z.object({
@@ -144,3 +157,20 @@ export const matchResultSchema = z.object({
   scoreA: z.coerce.number().int().min(0).max(2),
   scoreB: z.coerce.number().int().min(0).max(2),
 });
+
+export const messageSchema = z.object({
+  body: z.string().trim().min(1, "Escribe un mensaje").max(1000, "Máximo 1000 caracteres"),
+});
+
+const champion = z.string().regex(/^[A-Za-z0-9]{2,30}$/, "Campeón inválido");
+export const draftActionSchema = z.discriminatedUnion("type", [
+  z.object({ type: z.literal("settings"), fearless: z.boolean().optional(), timer: z.boolean().optional() }),
+  z.object({ type: z.literal("side"), game: z.number().int().min(1).max(10), side: z.enum(["BLUE", "RED"]) }),
+  z.object({ type: z.literal("ready"), game: z.number().int().min(1).max(10) }),
+  z.object({ type: z.literal("hover"), game: z.number().int().min(1).max(10), step: z.number().int().min(0).max(19), champion: champion.nullable() }),
+  z.object({ type: z.literal("lock"), game: z.number().int().min(1).max(10), step: z.number().int().min(0).max(19), champion: champion.nullable() }),
+  z.object({ type: z.literal("winner"), game: z.number().int().min(1).max(10), teamId: z.string().min(1) }),
+  z.object({ type: z.literal("reset"), game: z.number().int().min(1).max(10) }),
+]);
+
+export const memberRoleSchema = z.object({ role: roleSchema });

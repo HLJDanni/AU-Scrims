@@ -5,8 +5,8 @@ import { fail } from "./api";
 import type { ScrimDTO, TeamLite } from "./constants";
 
 export const scrimInclude = {
-  requesterTeam: { select: { id: true, name: true, tag: true, color: true, rating: true, region: true } },
-  opponentTeam: { select: { id: true, name: true, tag: true, color: true, rating: true, region: true } },
+  requesterTeam: { select: { id: true, name: true, tag: true, color: true, logoUpdatedAt: true, rating: true, region: true } },
+  opponentTeam: { select: { id: true, name: true, tag: true, color: true, logoUpdatedAt: true, rating: true, region: true } },
   createdBy: { select: { username: true } },
 } satisfies Prisma.ScrimInclude;
 
@@ -78,8 +78,20 @@ export async function assertNoOverlap(
   }
 }
 
-export function logEvent(tx: Prisma.TransactionClient, scrimId: string, actorId: string, type: string, message: string) {
-  return tx.scrimEvent.create({ data: { scrimId, actorId, type, message } });
+// Eventos que también se avisan en el chat del scrim (el chat se abre al aceptarse)
+const CHAT_EVENTS: Record<string, (message: string) => string> = {
+  ACCEPTED: (m) => `${m}. Se abrió este chat para que ambos equipos se pongan de acuerdo; el botón Draft abre la selección de campeones.`,
+  PROPOSAL_ACCEPTED: (m) => m,
+  ROOM: (m) => m,
+  RESULT: (m) => m,
+  CANCELLED: (m) => `${m}. El chat queda como historial.`,
+};
+
+export async function logEvent(tx: Prisma.TransactionClient, scrimId: string, actorId: string, type: string, message: string) {
+  const event = await tx.scrimEvent.create({ data: { scrimId, actorId, type, message } });
+  const toChat = CHAT_EVENTS[type];
+  if (toChat) await tx.scrimMessage.create({ data: { scrimId, system: true, body: toChat(message) } });
+  return event;
 }
 
 export const teamLabel = (t: Pick<Team, "tag">) => `[${t.tag}]`;

@@ -1,6 +1,6 @@
 # Plan y resultados de pruebas · AU Scrims
 
-**Fecha de ejecución:** 24/10/2026 · **Entorno:** Docker local (app `:3000`, PostgreSQL `:5434`), datos demo · **Resultado global:** 27/27 pruebas automatizadas aprobadas
+**Fecha de ejecución:** 24/10/2026 · **Entorno:** Docker local (app `:3000`, PostgreSQL `:5434`), datos demo · **Resultado global:** 33/33 pruebas automatizadas aprobadas
 
 ## Cómo ejecutarlas
 
@@ -31,6 +31,8 @@ Las pruebas de caja negra, integración y E2E usan los usuarios demo y limpian l
 | Unitaria | R1 | `tests/unit/reminders.test.ts` | Avisos de inicio: umbrales de 15, 10 y 5 min (límites incluidos), nada antes de 15 min ni después de empezar, clave distinta al re-agendar y cuenta regresiva | ✅ |
 | Unitaria | U10 | `tests/unit/elo.test.ts` | Puntos en juego: cada marcador posible con los mismos valores que aplica el servidor (iguales, 400 arriba y 400 abajo) y probabilidad esperada | ✅ |
 | Unitaria | U11 | `tests/unit/elo.test.ts` | Piso de 0 puntos: equipos nuevos no pierden puntos, el perdedor solo pierde lo que tiene y el ganador suma completo | ✅ |
+| Unitaria | U12 | `tests/unit/draft.test.ts` | Orden profesional del draft: 20 acciones, 5 baneos y 5 picks por lado, fases y slots | ✅ |
+| Unitaria | U13 | `tests/unit/draft.test.ts` | Fearless bloquea lo elegido (no lo baneado) en juegos anteriores; elección de lado: invitado en el juego 1, luego el perdedor | ✅ |
 | Unitaria | S1 | `tests/unit/swiss.test.ts` | Motor suizo: ronda 1 por siembra, Bo3 en partidos decisivos, descanso con impares (una vez por equipo), torneos de 4 a 16 equipos terminan en ≤5 partidos por equipo y nunca hay revancha si existía alternativa | ✅ |
 | Unitaria | S2 | `tests/unit/swiss.test.ts` | Elegibilidad: Barón (Maestro+), Heraldo (Platino II–Diamante I, límites incluidos), rechazo por rating, victorias, roster o ELO; suplentes fuera del promedio | ✅ |
 | Caja blanca | W1 | `tests/whitebox/scrim-dto.test.ts` | `toDTO`: ramas anfitrión/invitado (marcador y delta invertidos), valores nulos | ✅ |
@@ -42,9 +44,13 @@ Las pruebas de caja negra, integración y E2E usan los usuarios demo y limpian l
 | Caja negra | N5 | `tests/blackbox/api.test.ts` | Un tercer equipo no ve, edita ni cancela el scrim (404) y no aparece en sus listas; ranking ordenado | ✅ |
 | Integración | I1 | `tests/integration/scrim-lifecycle.test.ts` | Agendar → aceptar → proponer → aprobar → link → jugar → resultado: estado en BD, Elo de ambos equipos, bitácora y ranking | ✅ |
 | Integración | I2 | `tests/integration/delete-team.test.ts` | Eliminar equipo: capitán 403, nombre incorrecto 422, coach 200; se borran equipo y scrims, el staff queda sin equipo y va a `/onboarding` | ✅ |
-| Integración | I3 | `tests/integration/players.test.ts` | Roster con o sin clave de Riot: link de op.gg obligatorio, solo op.gg, servidor del equipo, Riot ID válido, analista 403, titular repetido y cuenta repetida 409, edición sin re-consultar a Riot, roster privado para otro equipo; con clave, rango real desde Riot, cuenta inexistente 422 y sincronización | ✅ |
+| Integración | I3 | `tests/integration/players.test.ts` | Roster con o sin clave de Riot: link de op.gg obligatorio, solo op.gg, servidor del equipo, Riot ID válido, analista 403, titular repetido y cuenta repetida 409, edición sin re-consultar a Riot, roster privado para otro equipo; con clave, rango real desde Riot, cuenta inexistente 422 y sincronización; máximo 3 suplentes (el cuarto da 409) | ✅ |
 | Integración | I4 | `tests/integration/tournament.test.ts` | Torneo completo vía API: solo coach organiza, uno abierto por división, inscripción por rol y requisitos (9 victorias → 403), mínimo 4 equipos, solo el organizador inicia, siembra 1v3/2v4, validación de marcador Bo1/Bo3, permisos de reporte, doble reporte, fin con todos clasificados o eliminados y coherencia en BD | ✅ |
 | Integración | I5 | `tests/integration/privacy-legend.test.ts` | Privacidad mutua: sin scrim nadie ve el roster rival (sí su ELO promedio); con scrim lo ven coach y analista de ambos lados, no capitán ni Leyenda; al cancelar vuelve a ser privado. Leyenda con equipo: lee sus scrims, no agenda (403) ni ve la invitación; sin equipo: ranking, jugadores y torneos sí, scrims no, y las páginas de equipo la mandan al ranking | ✅ |
+| Integración | I6 | `tests/integration/chat-draft.test.ts` | El chat se abre al aceptar (403 antes), mensajes nuevos con `?after`, no leídos y marcado como leído; un tercer equipo recibe 404 | ✅ |
+| Integración | I7 | `tests/integration/chat-draft.test.ts` | Draft: fearless, lado del invitado, listos, turnos (403 fuera de turno), repetido (409), resumen en el chat, ganador → el perdedor elige lado, tiempo agotado (baneo omitido, pick al azar o el seleccionado), bloqueo fearless entre juegos y reinicio | ✅ |
+| Integración | I8 | `tests/integration/team-identity.test.ts` | Imagen del equipo validada por contenido (un SVG disfrazado de PNG da 422), servida con CSP y solo con sesión; el capitán edita el emblema pero no el nombre (403); solo el coach asigna roles y no puede quedarse el equipo sin coach | ✅ |
+| Integración | I9 | `tests/integration/team-identity.test.ts` | La Leyenda que se une con código debe dar su op.gg (422 sin él o de otro servidor); entra al roster con su cuenta, sigue sin poder editarlo y, si el coach la quita, sale del roster | ✅ |
 | End-to-end | E1 | `tests/e2e/schedule-flow.spec.ts` | Crea su propio equipo, rival y coach temporales (y los borra al terminar). En el navegador: login → agendar con 5 juegos y link → Enviadas → detalle → Sala → copiar invitación → Actividad → cancelar | ✅ |
 | End-to-end | E2 | `tests/e2e/schedule-flow.spec.ts` | Con un scrim confirmado a 6 min: el aviso aparece con minutos restantes, cuenta regresiva y botón para unirse a la sala; al descartarlo desaparece y no vuelve al recargar | ✅ |
 
@@ -111,6 +117,13 @@ Además de las pruebas automatizadas, se hizo una verificación manual de los en
 | CA-26 | Aviso estilo Teams a los 15, 10 y 5 minutos del inicio de un scrim, con la temática de la app | R1, E2; revisado en el navegador con `npm run simulate:upcoming` (sonido, botón de sala, invitación y aviso del escritorio opcional) | ✅ Cumple |
 | CA-27 | Vista previa de los puntos de ranking en juego al agendar, en el detalle del scrim y al registrar el resultado | U10; revisado en el navegador (formulario con rival elegido, detalle de un scrim confirmado y registro de un 1-1) | ✅ Cumple |
 | CA-28 | Todos los equipos inician en 0 puntos de ranking y nunca quedan en negativo | U1, U11; migración `rating_base_zero` lleva los equipos existentes a la nueva escala (rating − 6000, mínimo 0) | ✅ Cumple |
+| CA-29 | Al aceptarse un scrim se abre un chat entre ambos equipos, accesible desde el calendario como en Teams | I6; revisado en el navegador (lista de chats con no leídos, icono en el calendario, botones Abrir chat y Draft en el detalle) | ✅ Cumple |
+| CA-30 | Botón Draft con experiencia estilo Mundial | U12, I7; revisado en el navegador en escritorio y móvil (banners por lado, reloj, baneos, picks con splash art, cuadrícula con búsqueda y filtro por clase) | ✅ Cumple |
+| CA-31 | Draft fearless o normal con un toggle y elección de lado | U13, I7 | ✅ Cumple |
+| CA-32 | Al crear el equipo se puede elegir una imagen; el emblema alterna entre imagen y siglas al pasar el cursor, con giro | I8; revisado en el navegador (giro al pasar el cursor, vista previa en el registro y en Ajustes) | ✅ Cumple |
+| CA-33 | Coach y capitán editan el emblema; el coach asigna capitanes y roles | I8; revisado en el navegador (selector de rol en Mi equipo → Miembros) | ✅ Cumple |
+| CA-34 | La Leyenda que se une con código da su op.gg y queda integrada al roster del equipo | I9; revisado en el navegador (formulario de registro con op.gg y posición) | ✅ Cumple |
+| CA-35 | Un equipo tiene como máximo 3 suplentes | I3; en la interfaz el botón Suplente se desactiva al llegar a 3 y el contador muestra 3/3 | ✅ Cumple |
 
 ## Hallazgos corregidos durante las pruebas
 

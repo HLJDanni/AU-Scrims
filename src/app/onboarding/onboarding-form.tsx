@@ -6,6 +6,7 @@ import { toast } from "sonner";
 import { api, cn } from "@/lib/client";
 import { AuthFrame } from "@/components/auth/auth-frame";
 import { TeamFields, emptyTeam } from "@/components/auth/team-fields";
+import { LegendPlayerFields, emptyLegendPlayer, legendPlayerBody } from "@/components/auth/legend-player-fields";
 import { Button } from "@/components/ui/button";
 
 export function OnboardingForm({ username, legend = false }: { username: string; legend?: boolean }) {
@@ -14,14 +15,17 @@ export function OnboardingForm({ username, legend = false }: { username: string;
   // La Leyenda no crea equipos: solo se une con código o sigue como espectadora
   const [team, setTeam] = useState(emptyTeam);
   const [code, setCode] = useState("");
+  const [player, setPlayer] = useState(emptyLegendPlayer);
   const [loading, setLoading] = useState(false);
 
   async function submit(e: React.FormEvent) {
     e.preventDefault();
+    const p = legend ? legendPlayerBody(player) : null;
+    if (p && !p.ok) return toast.error(p.error);
     setLoading(true);
     try {
-      if (mode === "create") await api("/api/team", { body: team });
-      else await api("/api/team/join", { body: { inviteCode: code } });
+      if (mode === "create") await api("/api/team", { body: { ...team, logo: team.logo ?? undefined } });
+      else await api("/api/team/join", { body: { inviteCode: code, player: p?.ok ? p.body : undefined } });
       router.replace("/dashboard");
       router.refresh();
     } catch (err) {
@@ -71,6 +75,7 @@ export function OnboardingForm({ username, legend = false }: { username: string;
             onChange={(e) => setCode(e.target.value.toUpperCase())}
           />
         )}
+        {mode === "join" && legend && <LegendPlayerFields value={player} onChange={setPlayer} />}
         <Button type="submit" size="lg" className="w-full" loading={loading}>
           Continuar
         </Button>

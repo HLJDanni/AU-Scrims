@@ -25,7 +25,7 @@ export type LeaderboardRow = {
 
 export async function getLeaderboard(): Promise<LeaderboardRow[]> {
   const [teams, completed] = await Promise.all([
-    db.team.findMany({ select: { id: true, name: true, tag: true, color: true, region: true, rating: true } }),
+    db.team.findMany({ select: { id: true, name: true, tag: true, color: true, logoUpdatedAt: true, region: true, rating: true } }),
     db.scrim.findMany({
       where: { status: "COMPLETED" },
       select: { requesterTeamId: true, opponentTeamId: true, requesterScore: true, opponentScore: true, startAt: true },
@@ -72,6 +72,7 @@ export async function getLeaderboard(): Promise<LeaderboardRow[]> {
         name: t.name,
         tag: t.tag,
         color: t.color,
+        logoUpdatedAt: t.logoUpdatedAt,
         region: t.region,
         rating: t.rating,
         tier: tier.name,

@@ -9,7 +9,8 @@ import { api, cn } from "@/lib/client";
 import { REGIONS, ROLE_META, TEAM_COLORS, type Role } from "@/lib/constants";
 import { tierFor } from "@/lib/elo";
 import { Tabs, TabPanel } from "../ui/tabs";
-import { EmptyState, PageHeader, RoleBadge, Skeleton, StatCard, TeamEmblem } from "../ui/misc";
+import { EmptyState, PageHeader, RoleBadge, Skeleton, StatCard, TeamEmblem, teamLogoUrl } from "../ui/misc";
+import { LogoPicker } from "./logo-picker";
 import { Button } from "../ui/button";
 import { Modal } from "../ui/modal";
 import { RankIcon } from "../ui/rank-icon";
@@ -17,9 +18,10 @@ import { PlayersTab } from "./players-tab";
 import { useShell } from "../app-shell";
 
 type TeamData = {
-  team: { id: string; name: string; tag: string; color: string; region: string; rating: number; description: string | null; createdAt: string; inviteCode: string | null };
+  team: { id: string; name: string; tag: string; color: string; region: string; rating: number; description: string | null; logoUpdatedAt: string | null; createdAt: string; inviteCode: string | null };
   members: { id: string; username: string; role: Role; createdAt: string }[];
   canManage: boolean;
+  canEditEmblem: boolean;
   canManagePlayers: boolean;
   stats: {
     rank: number;
@@ -58,7 +60,7 @@ export function TeamView() {
               <RankIcon tier={tier.icon} size={22} />
               {tier.name}
             </span>
-            <span className="text-stone-400"> · {data.team.rating} pts · {data.members.length} miembros del staff</span>
+            <span className="text-stone-400"> · {data.team.rating} pts · {data.members.length} miembros</span>
           </p>
         </div>
       </motion.div>
@@ -68,11 +70,11 @@ export function TeamView() {
         className="mb-6"
         tabs={[
           { id: "players", label: "Jugadores", icon: <Swords className="h-4 w-4" /> },
-          { id: "roster", label: "Staff", icon: <Users className="h-4 w-4" />, count: data.members.length },
+          { id: "roster", label: "Miembros", icon: <Users className="h-4 w-4" />, count: data.members.length },
           // La Leyenda no recibe el código de invitación
           ...(data.team.inviteCode ? [{ id: "invite" as const, label: "Invitación", icon: <KeyRound className="h-4 w-4" /> }] : []),
           { id: "stats", label: "Estadísticas", icon: <BarChart3 className="h-4 w-4" /> },
-          ...(data.canManage ? [{ id: "settings" as const, label: "Ajustes", icon: <Settings className="h-4 w-4" /> }] : []),
+          ...(data.canEditEmblem ? [{ id: "settings" as const, label: "Ajustes", icon: <Settings className="h-4 w-4" /> }] : []),
         ]}
       />
       <TabPanel id={tab}>
@@ -80,10 +82,11 @@ export function TeamView() {
         {tab === "roster" && <Roster data={data} onChange={() => mutate()} />}
         {tab === "invite" && data.team.inviteCode && <Invite data={data} onChange={() => mutate()} />}
         {tab === "stats" && <Stats data={data} />}
-        {tab === "settings" && data.canManage && (
+        {tab === "settings" && data.canEditEmblem && (
           <div className="space-y-6">
-            <TeamSettings data={data} onChange={() => mutate()} />
-            <DangerZone data={data} />
+            <EmblemSettings data={data} onChange={() => mutate()} />
+            {data.canManage && <TeamSettings data={data} onChange={() => mutate()} />}
+            {data.canManage && <DangerZone data={data} />}
           </div>
         )}
       </TabPanel>
@@ -91,21 +94,39 @@ export function TeamView() {
   );
 }
 
+const PLURAL: Record<Role, string> = { COACH: "Coaches", ANALYST: "Analistas", CAPTAIN: "Capitanes", LEGEND: "Leyendas" };
+
 function Roster({ data, onChange }: { data: TeamData; onChange: () => void }) {
   const { user } = useShell();
   const router = useRouter();
-  const roles: Role[] = ["COACH", "ANALYST", "CAPTAIN"];
+  const roles: Role[] = ["COACH", "ANALYST", "CAPTAIN", "LEGEND"];
+  const [changing, setChanging] = useState<string | null>(null);
+
+  async function changeRole(id: string, role: Role) {
+    setChanging(id);
+    try {
+      const r = await api<{ message?: string }>(`/api/team/members/${id}`, { method: "PATCH", body: { role } });
+      if (r.message) toast.success(r.message);
+      onChange();
+      // Si cambié mi propio rol, la app debe recargar los permisos
+      if (id === user.id) router.refresh();
+    } catch (err) {
+      toast.error((err as Error).message);
+    } finally {
+      setChanging(null);
+    }
+  }
 
   async function remove(id: string, name: string) {
     const self = id === user.id;
-    if (!window.confirm(self ? "¿Salir del equipo? Perderás acceso a sus scrims." : `¿Quitar a ${name} del staff?`)) return;
+    if (!window.confirm(self ? "¿Salir del equipo? Perderás acceso a sus scrims." : `¿Quitar a ${name} del equipo?`)) return;
     try {
       await api(`/api/team/members/${id}`, { method: "DELETE" });
       if (self) {
         router.replace("/onboarding");
         router.refresh();
       } else {
-        toast.success(`${name} ya no forma parte del staff`);
+        toast.success(`${name} ya no forma parte del equipo`);
         onChange();
       }
     } catch (err) {
@@ -114,13 +135,17 @@ function Roster({ data, onChange }: { data: TeamData; onChange: () => void }) {
   }
 
   return (
-    <div className="grid gap-4 lg:grid-cols-3">
+    <div className="space-y-4">
+      {data.canManage && (
+        <p className="text-xs text-stone-400">Como coach puedes cambiar el rol de cada miembro (por ejemplo, nombrar capitanes) con el selector de su tarjeta.</p>
+      )}
+    <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
       {roles.map((role, ri) => {
         const members = data.members.filter((m) => m.role === role);
         return (
           <motion.div key={role} initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: ri * 0.07 }} className="hex-panel p-5">
             <div className="mb-4">
-              <p className="font-display text-base font-bold tracking-wider text-gold-50">{ROLE_META[role].label}es</p>
+              <p className="font-display text-base font-bold tracking-wider text-gold-50">{PLURAL[role]}</p>
               <p className="text-xs text-stone-400">{ROLE_META[role].description}</p>
             </div>
             <div className="space-y-2">
@@ -134,13 +159,29 @@ function Roster({ data, onChange }: { data: TeamData; onChange: () => void }) {
                     <p className="truncate text-sm font-semibold text-gold-50">
                       {m.username} {m.id === user.id && <span className="text-xs font-normal text-hex-200">(tú)</span>}
                     </p>
-                    <RoleBadge role={m.role} />
+                    {data.canManage ? (
+                      <select
+                        aria-label={`Rol de ${m.username}`}
+                        value={m.role}
+                        disabled={changing === m.id}
+                        onChange={(e) => changeRole(m.id, e.target.value as Role)}
+                        className="mt-0.5 rounded border border-void-500 bg-void-900 px-1.5 py-0.5 text-[11px] font-semibold text-gold-100 outline-none focus:border-gold-200 disabled:opacity-50"
+                      >
+                        {roles.map((r) => (
+                          <option key={r} value={r}>
+                            {ROLE_META[r].label}
+                          </option>
+                        ))}
+                      </select>
+                    ) : (
+                      <RoleBadge role={m.role} />
+                    )}
                   </div>
                   {(data.canManage || m.id === user.id) && (
                     <button
                       onClick={() => remove(m.id, m.username)}
                       className="rounded-md p-2 text-stone-400 opacity-0 transition hover:bg-blood/10 hover:text-blood group-hover:opacity-100"
-                      title={m.id === user.id ? "Salir del equipo" : "Quitar del staff"}
+                      title={m.id === user.id ? "Salir del equipo" : "Quitar del equipo"}
                     >
                       {m.id === user.id ? <LogOut className="h-4 w-4" /> : <UserMinus className="h-4 w-4" />}
                     </button>
@@ -151,6 +192,7 @@ function Roster({ data, onChange }: { data: TeamData; onChange: () => void }) {
           </motion.div>
         );
       })}
+    </div>
     </div>
   );
 }
@@ -247,9 +289,9 @@ function Stats({ data }: { data: TeamData }) {
 
 function TeamSettings({ data, onChange }: { data: TeamData; onChange: () => void }) {
   const router = useRouter();
-  const [form, setForm] = useState({ name: data.team.name, tag: data.team.tag, region: data.team.region, color: data.team.color, description: data.team.description ?? "" });
+  const [form, setForm] = useState({ name: data.team.name, tag: data.team.tag, region: data.team.region, description: data.team.description ?? "" });
   const [saving, setSaving] = useState(false);
-  useEffect(() => setForm({ name: data.team.name, tag: data.team.tag, region: data.team.region, color: data.team.color, description: data.team.description ?? "" }), [data.team]);
+  useEffect(() => setForm({ name: data.team.name, tag: data.team.tag, region: data.team.region, description: data.team.description ?? "" }), [data.team]);
 
   async function save(e: React.FormEvent) {
     e.preventDefault();
@@ -267,7 +309,8 @@ function TeamSettings({ data, onChange }: { data: TeamData; onChange: () => void
   }
 
   return (
-    <form onSubmit={save} className="hex-panel grid max-w-3xl gap-5 p-6 md:grid-cols-[1fr_auto]">
+    <form onSubmit={save} className="hex-panel max-w-3xl p-6">
+      <p className="mb-4 font-display text-sm font-bold uppercase tracking-[0.18em] text-gold-100">Datos del equipo</p>
       <div className="grid gap-4 sm:grid-cols-2">
         <div className="sm:col-span-2">
           <label className="label">Nombre</label>
@@ -284,21 +327,6 @@ function TeamSettings({ data, onChange }: { data: TeamData; onChange: () => void
               <option key={r}>{r}</option>
             ))}
           </select>
-        </div>
-        <div className="sm:col-span-2">
-          <label className="label">Color del emblema</label>
-          <div className="flex flex-wrap gap-2">
-            {TEAM_COLORS.map((c) => (
-              <button
-                type="button"
-                key={c}
-                onClick={() => setForm({ ...form, color: c })}
-                className={cn("h-8 w-8 rounded-full border-2 transition-transform hover:scale-110", form.color === c ? "scale-110 border-gold-50" : "border-transparent")}
-                style={{ background: c }}
-                aria-label={c}
-              />
-            ))}
-          </div>
         </div>
         <div className="sm:col-span-2">
           <label htmlFor="team-description" className="label">
@@ -320,12 +348,67 @@ function TeamSettings({ data, onChange }: { data: TeamData; onChange: () => void
           </Button>
         </div>
       </div>
-      <div className="flex flex-col items-center gap-2 rounded-md border border-void-500 bg-void-950/50 p-6">
-        <p className="label">Vista previa</p>
-        <TeamEmblem team={{ tag: form.tag || "??", color: form.color }} size={96} />
-        <p className="mt-2 font-display font-bold text-gold-50">{form.name}</p>
-      </div>
     </form>
+  );
+}
+
+/** Imagen y color del emblema: los editan el coach y el capitán. */
+function EmblemSettings({ data, onChange }: { data: TeamData; onChange: () => void }) {
+  const router = useRouter();
+  const [color, setColor] = useState(data.team.color);
+  const [logo, setLogo] = useState<string | null | undefined>(undefined); // undefined = sin cambios
+  const [saving, setSaving] = useState(false);
+  useEffect(() => {
+    setColor(data.team.color);
+    setLogo(undefined);
+  }, [data.team.color, data.team.logoUpdatedAt]);
+  const dirty = color !== data.team.color || logo !== undefined;
+
+  async function save() {
+    setSaving(true);
+    try {
+      await api("/api/team", { method: "PATCH", body: { color, ...(logo !== undefined ? { logo } : {}) } });
+      toast.success("Emblema actualizado");
+      onChange();
+      router.refresh();
+    } catch (err) {
+      toast.error((err as Error).message);
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  return (
+    <div className="hex-panel grid max-w-3xl gap-6 p-6 sm:grid-cols-[auto_1fr]">
+      <LogoPicker team={{ tag: data.team.tag, color }} value={logo} current={teamLogoUrl(data.team)} onChange={setLogo} size={112} />
+      <div className="space-y-4">
+        <div>
+          <p className="font-display text-sm font-bold uppercase tracking-[0.18em] text-gold-100">Emblema del equipo</p>
+          <p className="mt-1 text-xs text-stone-400">
+            La imagen se ve en el calendario, el ranking, los chats y el draft. Al pasar el cursor gira y muestra las siglas [{data.team.tag}]. PNG, JPG o WebP; se recorta en
+            cuadrado.
+          </p>
+        </div>
+        <div>
+          <label className="label">Color del borde y de las siglas</label>
+          <div className="flex flex-wrap gap-2">
+            {TEAM_COLORS.map((c) => (
+              <button
+                type="button"
+                key={c}
+                onClick={() => setColor(c)}
+                className={cn("h-8 w-8 rounded-full border-2 transition-transform hover:scale-110", color === c ? "scale-110 border-gold-50" : "border-transparent")}
+                style={{ background: c }}
+                aria-label={c}
+              />
+            ))}
+          </div>
+        </div>
+        <Button onClick={save} loading={saving} disabled={!dirty}>
+          Guardar emblema
+        </Button>
+      </div>
+    </div>
   );
 }
 
@@ -376,7 +459,7 @@ function DangerZone({ data }: { data: TeamData }) {
         <div className="space-y-5">
           <ul className="space-y-1.5 rounded-md border border-blood/30 bg-blood/5 p-4 text-sm text-stone-300">
             <li>• Se eliminarán todos los scrims de <b className="text-gold-50">{data.team.name}</b>, incluidos los finalizados.</li>
-            <li>• Los {data.members.length} miembros del staff quedarán sin equipo.</li>
+            <li>• Los {data.members.length} miembros quedarán sin equipo.</li>
             <li>• El equipo desaparecerá del ranking.</li>
           </ul>
           <div>

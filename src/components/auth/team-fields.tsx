@@ -1,9 +1,9 @@
 "use client";
 import { REGIONS, TEAM_COLORS } from "@/lib/constants";
 import { cn } from "@/lib/client";
-import { TeamEmblem } from "../ui/misc";
+import { LogoPicker } from "../team/logo-picker";
 
-export type TeamDraft = { name: string; tag: string; region: string; color: string };
+export type TeamDraft = { name: string; tag: string; region: string; color: string; logo?: string | null };
 export const emptyTeam: TeamDraft = { name: "", tag: "", region: "LAN", color: TEAM_COLORS[0] };
 
 export function TeamFields({ value, onChange }: { value: TeamDraft; onChange: (v: TeamDraft) => void }) {
@@ -42,9 +42,10 @@ export function TeamFields({ value, onChange }: { value: TeamDraft; onChange: (v
           </div>
         </div>
       </div>
-      <div className="hidden flex-col items-center justify-center gap-2 rounded-md border border-void-500 bg-void-950/50 px-6 sm:flex">
-        <TeamEmblem team={{ tag: value.tag || "TAG", color: value.color }} size={80} />
-        <p className="max-w-[120px] truncate text-center text-xs text-stone-300">{value.name || "Tu equipo"}</p>
+      <div className="flex flex-col items-center justify-center gap-2 rounded-md border border-void-500 bg-void-950/50 px-5 py-4">
+        <p className="label !mb-0">Imagen (opcional)</p>
+        <LogoPicker team={value} value={value.logo ?? null} onChange={(logo) => onChange({ ...value, logo })} size={84} />
+        <p className="max-w-[140px] truncate text-center text-xs text-stone-300">{value.name || "Tu equipo"}</p>
       </div>
     </div>
   );

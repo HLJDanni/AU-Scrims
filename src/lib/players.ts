@@ -2,17 +2,16 @@ import "server-only";
 import type { Player } from "@prisma/client";
 import { db } from "./db";
 import { fail } from "./api";
-import { POSITIONS, eloAverage } from "./lol";
+import { MAX_PLAYERS, MAX_SUBS, POSITIONS, eloAverage } from "./lol";
 import { RiotError, fetchRankedProfile, riotEnabled, riotHttpStatus, type RankedProfile } from "./riot";
 
-export const MAX_PLAYERS = 10;
 
 /** Coach y capitán administran a los jugadores; el analista solo los consulta. */
 export const canManagePlayers = (role: string) => role === "COACH" || role === "CAPTAIN";
 
 const order = (p: Pick<Player, "position">) => POSITIONS.findIndex((x) => x.id === p.position);
 
-export function playerDTO(p: Player) {
+export function playerDTO(p: Player & { user?: { username: string } | null }) {
   return {
     id: p.id,
     gameName: p.gameName,
@@ -27,13 +26,15 @@ export function playerDTO(p: Player) {
     wins: p.wins,
     losses: p.losses,
     rankUpdatedAt: p.rankUpdatedAt?.toISOString() ?? null,
+    // Usuario de AU Scrims del jugador (Leyenda que se unió con el código del equipo)
+    account: p.user?.username ?? null,
   };
 }
 
 export async function getTeamProfile(teamId: string) {
   const team = await db.team.findUnique({
     where: { id: teamId },
-    select: { id: true, name: true, tag: true, color: true, region: true, rating: true, description: true, players: true },
+    select: { id: true, name: true, tag: true, color: true, logoUpdatedAt: true, region: true, rating: true, description: true, players: { include: { user: { select: { username: true } } } } },
   });
   if (!team) fail(404, "Equipo no encontrado");
   const players = [...team!.players].sort((a, b) => order(a) - order(b) || a.createdAt.getTime() - b.createdAt.getTime());
@@ -115,6 +116,21 @@ export async function syncTeamRanks(teamId: string, region: string) {
   return { updated, failed };
 }
 
+/**
+ * Valida un alta de jugador (servidor, cupo, posición, cuenta repetida) y, si hay RIOT_API_KEY,
+ * verifica la cuenta y trae su rango. Devuelve los datos listos para crear el Player.
+ */
+export async function preparePlayer(
+  team: { id: string; region: string },
+  input: { opggRegion: string; gameName: string; tagLine: string; opggUrl: string; position: Player["position"] },
+) {
+  const { opggRegion, ...data } = input;
+  assertSameRegion(opggRegion, team.region);
+  await assertPlayerAllowed(team.id, data);
+  const ranked = riotEnabled() ? rankedFields(await loadRankedProfile(opggRegion, data.gameName, data.tagLine)) : {};
+  return { ...data, ...ranked, teamId: team.id };
+}
+
 /** La cuenta de op.gg debe ser del mismo servidor en el que juega el equipo. */
 export function assertSameRegion(opggRegion: string, teamRegion: string) {
   if (opggRegion !== teamRegion)
@@ -128,7 +144,9 @@ export async function assertPlayerAllowed(
   excludeId?: string,
 ) {
   const others = await db.player.findMany({ where: { teamId, id: excludeId ? { not: excludeId } : undefined } });
-  if (!excludeId && others.length >= MAX_PLAYERS) fail(400, `El roster admite máximo ${MAX_PLAYERS} jugadores`);
+  if (!excludeId && others.length >= MAX_PLAYERS) fail(400, `El roster admite máximo ${MAX_PLAYERS} jugadores (5 titulares y ${MAX_SUBS} suplentes)`);
+  if (data.position === "SUB" && others.filter((p) => p.position === "SUB").length >= MAX_SUBS)
+    fail(409, `El equipo ya tiene ${MAX_SUBS} suplentes, el máximo. Elige una posición titular libre o quita a un suplente.`);
   if (data.position !== "SUB" && others.some((p) => p.position === data.position)) {
     const label = POSITIONS.find((p) => p.id === data.position)!.label;
     fail(409, `Ya hay un titular en ${label}. Cámbialo a suplente o edita al jugador actual.`);

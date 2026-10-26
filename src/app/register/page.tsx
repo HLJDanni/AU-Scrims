@@ -9,6 +9,7 @@ import { api, cn } from "@/lib/client";
 import { ROLE_META, type Role } from "@/lib/constants";
 import { AuthFrame } from "@/components/auth/auth-frame";
 import { TeamFields, emptyTeam } from "@/components/auth/team-fields";
+import { LegendPlayerFields, emptyLegendPlayer, legendPlayerBody } from "@/components/auth/legend-player-fields";
 import { Button } from "@/components/ui/button";
 
 const ROLE_ICONS: Record<Role, React.ReactNode> = {
@@ -36,17 +37,28 @@ export default function RegisterPage() {
       ];
   const [team, setTeam] = useState(emptyTeam);
   const [inviteCode, setInviteCode] = useState("");
+  const [legendPlayer, setLegendPlayer] = useState(emptyLegendPlayer);
   const [loading, setLoading] = useState(false);
 
   async function submit(e: React.FormEvent) {
     e.preventDefault();
     if (step === 1) return setStep(2);
+    const withPlayer = legend && mode === "join";
+    const player = withPlayer ? legendPlayerBody(legendPlayer) : null;
+    if (player && !player.ok) return toast.error(player.error);
     setLoading(true);
     try {
-      await api("/api/auth/register", {
-        body: { ...account, role, mode, team: mode === "create" ? team : undefined, inviteCode: mode === "join" ? inviteCode : undefined },
+      const res = await api<{ joinedRoster: boolean }>("/api/auth/register", {
+        body: {
+          ...account,
+          role,
+          mode,
+          team: mode === "create" ? { ...team, logo: team.logo ?? undefined } : undefined,
+          inviteCode: mode === "join" ? inviteCode : undefined,
+          player: player?.ok ? player.body : undefined,
+        },
       });
-      toast.success("¡Bienvenido a AU Scrims!");
+      toast.success("¡Bienvenido a AU Scrims!", { description: res.joinedRoster ? "Ya formas parte del roster de tu equipo." : undefined });
       router.replace("/dashboard");
       router.refresh();
     } catch (err) {
@@ -165,6 +177,11 @@ export default function RegisterPage() {
                       onChange={(e) => setInviteCode(e.target.value.toUpperCase())}
                     />
                     <p className="mt-1.5 text-xs text-stone-400">Pídelo al coach de tu equipo (Mi equipo → Invitación).</p>
+                    {legend && (
+                      <div className="mt-4">
+                        <LegendPlayerFields value={legendPlayer} onChange={setLegendPlayer} />
+                      </div>
+                    )}
                   </motion.div>
                 )}
               </AnimatePresence>

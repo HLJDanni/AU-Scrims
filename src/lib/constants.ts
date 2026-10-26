@@ -24,7 +24,8 @@ export const REGIONS = ["LAN", "LAS", "NA", "BR", "EUW", "EUNE", "KR", "OCE"] as
 
 export const TEAM_COLORS = ["#C8AA6E", "#0AC8B9", "#E84057", "#9D48E0", "#576BCE", "#2DD4A8", "#F0E6D2", "#C86B3C"];
 
-export type TeamLite = { id: string; name: string; tag: string; color: string; rating: number; region?: string };
+/** logoUpdatedAt: versión de la imagen del equipo (null = sin imagen, se muestran solo las siglas). */
+export type TeamLite = { id: string; name: string; tag: string; color: string; rating: number; region?: string; logoUpdatedAt?: string | Date | null };
 
 export type ScrimDTO = {
   id: string;
@@ -47,3 +48,21 @@ export type ScrimDTO = {
 };
 
 export type ScrimEventDTO = { id: string; type: string; message: string; actor: string | null; createdAt: string };
+
+export type ChatMessageDTO = {
+  id: string;
+  body: string;
+  system: boolean;
+  author: string | null;
+  authorRole: Role | null;
+  team: { id: string; tag: string; color: string; logoUpdatedAt: string | Date | null } | null;
+  mine: boolean;
+  createdAt: string;
+};
+
+export type ChatSummaryDTO = {
+  scrim: ScrimDTO;
+  lastMessage: { body: string; author: string | null; system: boolean; createdAt: string } | null;
+  unread: number;
+  writable: boolean;
+};

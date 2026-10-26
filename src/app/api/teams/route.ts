@@ -20,6 +20,7 @@ export const GET = withStaff(async ({ req, user }) => {
       name: true,
       tag: true,
       color: true,
+      logoUpdatedAt: true,
       rating: true,
       region: true,
       players: { select: { position: true, tier: true, division: true, lp: true } },

@@ -6,7 +6,7 @@ import { evaluateEligibility, type Division } from "./tournament-rules";
 import { MAX_ROUNDS, LOSSES_TO_ELIMINATE, WINS_TO_QUALIFY, buchholz, pairRound, statusFor, type SwissEntry, type SwissMatch } from "./swiss";
 
 type Tx = Prisma.TransactionClient;
-const teamSelect = { id: true, name: true, tag: true, color: true, region: true, rating: true } as const;
+const teamSelect = { id: true, name: true, tag: true, color: true, logoUpdatedAt: true, region: true, rating: true } as const;
 
 /** Scrims ganados por cada equipo (resultado registrado y marcador a favor). */
 async function scrimWinsByTeam(teamIds?: string[]) {

@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import useSWR from "swr";
 import { toast } from "sonner";
 import { api, cn } from "@/lib/client";
-import { OPGG_ERRORS, POSITIONS, formatRank, parseOpggUrl, type Position } from "@/lib/lol";
+import { MAX_PLAYERS, MAX_SUBS, OPGG_ERRORS, POSITIONS, formatRank, parseOpggUrl, type Position } from "@/lib/lol";
 import { fromNow } from "@/lib/dates";
 import { Button } from "../ui/button";
 import { Modal } from "../ui/modal";
@@ -83,7 +83,7 @@ export function PlayersTab({ canEdit }: { canEdit: boolean }) {
             </Button>
           )}
           {canEdit && (
-            <Button onClick={() => setEditing(null)} disabled={data.players.length >= 10}>
+            <Button onClick={() => setEditing(null)} disabled={data.players.length >= MAX_PLAYERS} title={data.players.length >= MAX_PLAYERS ? "Roster completo" : undefined}>
               <Plus className="h-4 w-4" /> Jugador
             </Button>
           )}
@@ -114,7 +114,7 @@ export function PlayersTab({ canEdit }: { canEdit: boolean }) {
             <PlayerList players={starters} actions={actions} showAccount />
           </section>
           <section>
-            <h3 className="mb-2 text-[11px] font-semibold uppercase tracking-[0.18em] text-gold-200">Suplentes ({subs.length})</h3>
+            <h3 className="mb-2 text-[11px] font-semibold uppercase tracking-[0.18em] text-gold-200">Suplentes ({subs.length}/{MAX_SUBS})</h3>
             <PlayerList players={subs} actions={actions} showAccount />
           </section>
         </div>
@@ -127,6 +127,7 @@ export function PlayersTab({ canEdit }: { canEdit: boolean }) {
         teamRegion={data.team.region}
         rankSync={data.rankSync}
         taken={starters.filter((p) => p.id !== editing?.id).map((p) => p.position)}
+        subsFull={subs.filter((p) => p.id !== editing?.id).length >= MAX_SUBS}
         onClose={() => setEditing(undefined)}
         onSaved={() => {
           setEditing(undefined);
@@ -143,9 +144,11 @@ function PlayerForm({
   teamRegion,
   rankSync,
   taken,
+  subsFull,
   onClose,
   onSaved,
 }: {
+  subsFull: boolean;
   open: boolean;
   player?: PlayerDTO;
   teamRegion: string;
@@ -248,13 +251,13 @@ function PlayerForm({
           <span className="label">Posición</span>
           <div className="grid grid-cols-3 gap-2 sm:grid-cols-6">
             {POSITIONS.map((p) => {
-              const busy = p.id !== "SUB" && taken.includes(p.id);
+              const busy = p.id === "SUB" ? subsFull : taken.includes(p.id);
               return (
                 <button
                   type="button"
                   key={p.id}
                   disabled={busy}
-                  title={busy ? "Ya hay un titular en esta posición" : undefined}
+                  title={busy ? (p.id === "SUB" ? `Ya hay ${MAX_SUBS} suplentes, el máximo` : "Ya hay un titular en esta posición") : undefined}
                   onClick={() => setPosition(p.id)}
                   className={cn(
                     "rounded-md border px-2 py-2 text-xs font-semibold transition-colors duration-100 disabled:cursor-not-allowed disabled:opacity-35",

@@ -2,6 +2,9 @@ import { db } from "@/lib/db";
 import { fail, parseBody, withTeam, withUser } from "@/lib/api";
 import { createTeamSchema, deleteTeamSchema, updateTeamSchema } from "@/lib/validators";
 import { generateInviteCode } from "@/lib/team";
+import { logoData } from "@/lib/logo";
+
+const teamOut = { id: true, name: true, tag: true, color: true, region: true, rating: true, description: true, logoUpdatedAt: true } as const;
 
 /** Mi equipo: datos, miembros y estadísticas. */
 export const GET = withTeam(async ({ user }) => {
@@ -16,8 +19,8 @@ export const GET = withTeam(async ({ user }) => {
     db.scrim.findMany({
       where: { status: "COMPLETED", OR: [{ requesterTeamId: teamId }, { opponentTeamId: teamId }] },
       include: {
-        requesterTeam: { select: { id: true, name: true, tag: true, color: true } },
-        opponentTeam: { select: { id: true, name: true, tag: true, color: true } },
+        requesterTeam: { select: { id: true, name: true, tag: true, color: true, logoUpdatedAt: true } },
+        opponentTeam: { select: { id: true, name: true, tag: true, color: true, logoUpdatedAt: true } },
       },
     }),
     db.team.count({ where: { rating: { gt: user.team.rating } } }),
@@ -52,11 +55,13 @@ export const GET = withTeam(async ({ user }) => {
       region: team.region,
       rating: team.rating,
       description: team.description,
+      logoUpdatedAt: team.logoUpdatedAt,
       createdAt: team.createdAt,
       inviteCode: user.role === "LEGEND" ? null : team.inviteCode,
     },
     members: team.members,
     canManage: isCoach,
+    canEditEmblem: isCoach || user.role === "CAPTAIN",
     canManagePlayers: isCoach || user.role === "CAPTAIN",
     stats: {
       rank: rank + 1,
@@ -74,21 +79,24 @@ export const GET = withTeam(async ({ user }) => {
 export const POST = withUser(async ({ req, user }) => {
   if (user.teamId) fail(400, "Ya perteneces a un equipo");
   if (user.role === "LEGEND") fail(403, "Una Leyenda no puede crear equipos; únete con un código");
-  const data = await parseBody(req, createTeamSchema);
+  const { logo, ...data } = await parseBody(req, createTeamSchema);
   const dup = await db.team.findFirst({
     where: { OR: [{ name: { equals: data.name, mode: "insensitive" } }, { tag: data.tag }] },
   });
   if (dup) fail(409, "Ya existe un equipo con ese nombre o tag");
   const team = await db.team.create({
-    data: { ...data, inviteCode: generateInviteCode(), members: { connect: { id: user.id } } },
+    data: { ...data, ...logoData(logo), inviteCode: generateInviteCode(), members: { connect: { id: user.id } } },
+    select: teamOut,
   });
   return { team };
 });
 
-/** Editar equipo (solo Coach). */
+/** Editar equipo. El coach edita todo; el capitán, solo el emblema (imagen y color). */
 export const PATCH = withTeam(async ({ req, user }) => {
-  if (user.role !== "COACH") fail(403, "Solo el coach puede editar el equipo");
-  const data = await parseBody(req, updateTeamSchema);
+  if (user.role !== "COACH" && user.role !== "CAPTAIN") fail(403, "Solo el coach o el capitán pueden editar el equipo");
+  const { logo, ...data } = await parseBody(req, updateTeamSchema);
+  if (user.role === "CAPTAIN" && Object.keys(data).some((k) => k !== "color" && data[k as keyof typeof data] !== undefined))
+    fail(403, "El capitán solo puede cambiar la imagen y el color del emblema");
   if (data.name || data.tag) {
     const dup = await db.team.findFirst({
       where: {
@@ -101,7 +109,7 @@ export const PATCH = withTeam(async ({ req, user }) => {
     });
     if (dup) fail(409, "Ya existe un equipo con ese nombre o tag");
   }
-  const team = await db.team.update({ where: { id: user.teamId }, data });
+  const team = await db.team.update({ where: { id: user.teamId }, data: { ...data, ...logoData(logo) }, select: teamOut });
   return { team };
 });
 

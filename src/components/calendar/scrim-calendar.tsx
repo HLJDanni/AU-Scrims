@@ -8,12 +8,12 @@ import esLocale from "@fullcalendar/core/locales/es";
 import type { DatesSetArg, EventContentArg, EventDropArg, EventInput } from "@fullcalendar/core";
 import type { EventResizeDoneArg } from "@fullcalendar/interaction";
 import { motion } from "framer-motion";
-import { CalendarDays, CalendarRange, ChevronLeft, ChevronRight, Columns3, Link2, List, Plus, Repeat2 } from "lucide-react";
+import { CalendarDays, CalendarRange, ChevronLeft, ChevronRight, Columns3, Link2, List, MessagesSquare, Plus, Repeat2 } from "lucide-react";
 import { useMemo, useRef, useState } from "react";
 import useSWR from "swr";
 import { toast } from "sonner";
 import { api, cn, refreshScrims } from "@/lib/client";
-import { STATUS_META, type ScrimDTO } from "@/lib/constants";
+import { STATUS_META, type ChatSummaryDTO, type ScrimDTO } from "@/lib/constants";
 import { fmtFull } from "@/lib/dates";
 import { Tabs } from "../ui/tabs";
 import { Button } from "../ui/button";
@@ -38,6 +38,9 @@ export function ScrimCalendar() {
 
   const key = range ? `/api/scrims?scope=calendar&from=${encodeURIComponent(range.from)}&to=${encodeURIComponent(range.to)}` : null;
   const { data, mutate, isLoading } = useSWR<{ scrims: ScrimDTO[] }>(key);
+  // No leídos por scrim: el evento del calendario muestra el chat como en Teams
+  const { data: chatData } = useSWR<{ chats: ChatSummaryDTO[] }>("/api/chats", { refreshInterval: 15_000 });
+  const unreadBy = useMemo(() => new Map((chatData?.chats ?? []).map((c) => [c.scrim.id, c.unread])), [chatData]);
 
   const events = useMemo<EventInput[]>(() => {
     const list: EventInput[] = [];
@@ -54,7 +57,7 @@ export function ScrimCalendar() {
         borderColor: meta.color,
         textColor: "#F0E6D2",
         classNames: [`scrim-${s.status.toLowerCase()}`],
-        extendedProps: { scrim: s },
+        extendedProps: { scrim: s, unread: unreadBy.get(s.id) ?? 0 },
       });
       if (s.proposal && (s.status === "PENDING" || s.status === "CONFIRMED")) {
         list.push({
@@ -72,7 +75,7 @@ export function ScrimCalendar() {
       }
     }
     return list;
-  }, [data]);
+  }, [data, unreadBy]);
 
   const api_ = () => ref.current?.getApi();
 
@@ -146,7 +149,7 @@ export function ScrimCalendar() {
         <Legend color="#0AC8B9" label="Propuesta de re-agenda" dashed faded />
         <Legend color={STATUS_META.COMPLETED.color} label="Finalizado" />
         <span className="ml-auto hidden text-stone-400 md:inline">
-          {canAct ? "Arrastra en el calendario para agendar · arrastra un scrim para re-agendarlo" : "Vista de solo lectura"}
+          {canAct ? "Arrastra para agendar o re-agendar · abre un scrim confirmado para entrar a su chat y al draft" : "Vista de solo lectura"}
         </span>
       </div>
 
@@ -211,6 +214,7 @@ function renderEvent(arg: EventContentArg) {
         </span>
         <span className="text-stone-400">· {s.games} juegos</span>
         {s.roomLink && <Link2 className="h-3.5 w-3.5 text-hex-200" />}
+        {!proposal && <ChatIcon scrim={s} unread={arg.event.extendedProps.unread as number} />}
         <span className="text-xs" style={{ color: STATUS_META[s.status].color }}>
           {STATUS_META[s.status].label}
         </span>
@@ -232,11 +236,23 @@ function renderEvent(arg: EventContentArg) {
           {proposal ? "Propuesta " : ""}vs {s.opponent.tag}
         </span>
         {s.roomLink && !proposal && <Link2 className="h-3 w-3 shrink-0 text-hex-200" />}
+        {!proposal && <ChatIcon scrim={s} unread={arg.event.extendedProps.unread as number} />}
       </div>
       <div className="truncate text-[10px] opacity-80">
         {arg.timeText} · {s.games}G
       </div>
     </div>
+  );
+}
+
+/** Icono del chat del scrim (con punto si hay mensajes sin leer). */
+function ChatIcon({ scrim, unread }: { scrim: ScrimDTO; unread: number }) {
+  if (scrim.status !== "CONFIRMED" && scrim.status !== "COMPLETED") return null;
+  return (
+    <span className="relative ml-auto shrink-0" title={unread ? `${unread} mensajes sin leer` : "Chat del scrim"}>
+      <MessagesSquare className="h-3 w-3 text-gold-200" />
+      {unread > 0 && <span className="absolute -right-1 -top-1 h-1.5 w-1.5 rounded-full bg-hex-200 shadow-[0_0_6px_#0AC8B9]" />}
+    </span>
   );
 }
 

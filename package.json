@@ -17,7 +17,8 @@
     "test:e2e": "playwright test",
     "simulate:tournaments": "node scripts/simulate-tournaments.mjs",
     "simulate:legends": "node scripts/simulate-legends.mjs",
-    "simulate:upcoming": "node scripts/simulate-upcoming.mjs"
+    "simulate:upcoming": "node scripts/simulate-upcoming.mjs",
+    "simulate:chat": "node scripts/simulate-chat.mjs"
   },
   "prisma": {
     "seed": "node prisma/seed.mjs"

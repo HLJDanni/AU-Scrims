@@ -35,6 +35,10 @@ export const POSITIONS: { id: Position; label: string; short: string }[] = [
   { id: "SUB", label: "Suplente", short: "SUB" },
 ];
 
+/** Roster: 5 titulares (uno por posición) y hasta 3 suplentes. */
+export const MAX_SUBS = 3;
+export const MAX_PLAYERS = 5 + MAX_SUBS;
+
 const ROMAN = ["", "I", "II", "III", "IV"];
 const MASTER_BASE = 7 * 400; // Hierro IV = 0, cada división 100 LP, cada liga 400
 
