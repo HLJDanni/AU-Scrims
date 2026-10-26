@@ -1,6 +1,6 @@
-// Rating de equipos (sistema Elo en escala ×5): base 6000, K = 160 y diferencia de referencia 2000.
-// Equivale al Elo clásico (base 1200, K 32, 400) multiplicado por 5, por eso se comporta igual.
-export const BASE_RATING = 6000;
+// Puntos de ranking de equipos (sistema Elo): todos inician en 0, K = 160 y diferencia de referencia 2000.
+// Equivale al Elo clásico (K 32, 400) multiplicado por 5. Como los LP de LoL, un equipo nunca baja de 0.
+export const BASE_RATING = 0;
 const K = 160;
 const SCALE = 2000;
 
@@ -13,6 +13,15 @@ export function eloDelta(ratingA: number, ratingB: number, winsA: number, winsB:
   // Más juegos jugados = resultado más significativo (hasta x1.5)
   const weight = Math.min(1.5, 0.75 + played * 0.15);
   return Math.round(K * weight * (actual - expected));
+}
+
+/**
+ * Cambio real de puntos para cada lado: el ganador suma el delta completo y el perdedor
+ * nunca queda por debajo de 0 (solo pierde los puntos que tiene).
+ */
+export function applyResult(ratingA: number, ratingB: number, winsA: number, winsB: number) {
+  const delta = eloDelta(ratingA, ratingB, winsA, winsB);
+  return { deltaA: Math.max(ratingA + delta, 0) - ratingA, deltaB: Math.max(ratingB - delta, 0) - ratingB };
 }
 
 /** Probabilidad (0-1) que el sistema le da al equipo A de ganar cada juego. */
@@ -28,20 +37,20 @@ export function pointsAtStake(ratingA: number, ratingB: number, games: number) {
   return Array.from({ length: games + 1 }, (_, i) => {
     const mine = games - i;
     const theirs = i;
-    return { mine, theirs, delta: eloDelta(ratingA, ratingB, mine, theirs) };
+    return { mine, theirs, delta: applyResult(ratingA, ratingB, mine, theirs).deltaA };
   });
 }
 
 export const TIERS = [
-  { min: 9000, name: "Retador", color: "#F4C874", icon: "CHALLENGER" },
-  { min: 8500, name: "Gran Maestro", color: "#E84057", icon: "GRANDMASTER" },
-  { min: 8000, name: "Maestro", color: "#9D48E0", icon: "MASTER" },
-  { min: 7500, name: "Diamante", color: "#576BCE", icon: "DIAMOND" },
-  { min: 7000, name: "Esmeralda", color: "#2DD4A8", icon: "EMERALD" },
-  { min: 6500, name: "Platino", color: "#4E9996", icon: "PLATINUM" },
-  { min: 6000, name: "Oro", color: "#C89B3C", icon: "GOLD" },
-  { min: 5500, name: "Plata", color: "#A09B8C", icon: "SILVER" },
-  { min: 5000, name: "Bronce", color: "#8C5A3C", icon: "BRONZE" },
+  { min: 2500, name: "Retador", color: "#F4C874", icon: "CHALLENGER" },
+  { min: 2000, name: "Gran Maestro", color: "#E84057", icon: "GRANDMASTER" },
+  { min: 1600, name: "Maestro", color: "#9D48E0", icon: "MASTER" },
+  { min: 1300, name: "Diamante", color: "#576BCE", icon: "DIAMOND" },
+  { min: 1000, name: "Esmeralda", color: "#2DD4A8", icon: "EMERALD" },
+  { min: 800, name: "Platino", color: "#4E9996", icon: "PLATINUM" },
+  { min: 600, name: "Oro", color: "#C89B3C", icon: "GOLD" },
+  { min: 400, name: "Plata", color: "#A09B8C", icon: "SILVER" },
+  { min: 200, name: "Bronce", color: "#8C5A3C", icon: "BRONZE" },
   { min: -Infinity, name: "Hierro", color: "#5B5A56", icon: "IRON" },
 ] as const;
 

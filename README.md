@@ -82,9 +82,9 @@ Mini torneos dentro de la app (**Torneos** en el menú), formato suizo como el M
 | Barón | Maestro – Retador |
 | Heraldo | Platino II – Diamante I |
 
-Para jugar, además: **7,000 puntos de ranking** y **10 scrims ganados**. Quien no cumple no puede inscribirse; la pestaña *Requisitos* muestra qué le falta a cada equipo. Un coach elegible organiza el torneo de su división (uno abierto a la vez), coach o capitán inscriben al equipo y el organizador lo inicia (mínimo 4 equipos).
+Para jugar, además: **1,000 puntos de ranking** y **10 scrims ganados**. Quien no cumple no puede inscribirse; la pestaña *Requisitos* muestra qué le falta a cada equipo. Un coach elegible organiza el torneo de su división (uno abierto a la vez), coach o capitán inscriben al equipo y el organizador lo inicia (mínimo 4 equipos).
 
-> El rating de equipos usa Elo en escala ×5 (base 6000, K 160) para que el umbral de 7,000 sea alcanzable; se comporta igual que el Elo clásico.
+> Todos los equipos inician en **0 puntos** y nunca bajan de 0 (como los LP de LoL). Los puntos se calculan con Elo (K 160, escala 2000): un 3-0 entre equipos parejos vale ±96, así que el umbral de 1,000 cuesta unas 10–12 victorias.
 
 ### Simulación con datos de prueba
 

@@ -2,7 +2,7 @@ import { db } from "@/lib/db";
 import { fail, parseBody, withStaff } from "@/lib/api";
 import { resultSchema } from "@/lib/validators";
 import { loadOwnScrim, logEvent, scrimInclude, toDTO } from "@/lib/scrims";
-import { eloDelta } from "@/lib/elo";
+import { applyResult } from "@/lib/elo";
 
 /** Registrar el resultado (juegos ganados por cada lado) y actualizar el ranking. */
 export const POST = withStaff<{ id: string }>(async ({ req, user, params }) => {
@@ -27,13 +27,14 @@ export const POST = withStaff<{ id: string }>(async ({ req, user, params }) => {
       tx.team.findUniqueOrThrow({ where: { id: scrim.requesterTeamId } }),
       tx.team.findUniqueOrThrow({ where: { id: scrim.opponentTeamId } }),
     ]);
-    const delta = eloDelta(home.rating, away.rating, requesterScore, opponentScore);
-    await tx.team.update({ where: { id: home.id }, data: { rating: { increment: delta } } });
-    await tx.team.update({ where: { id: away.id }, data: { rating: { decrement: delta } } });
+    // Ningún equipo baja de 0: el perdedor solo pierde los puntos que tiene
+    const { deltaA, deltaB } = applyResult(home.rating, away.rating, requesterScore, opponentScore);
+    await tx.team.update({ where: { id: home.id }, data: { rating: { increment: deltaA } } });
+    await tx.team.update({ where: { id: away.id }, data: { rating: { increment: deltaB } } });
 
     const s = await tx.scrim.update({
       where: { id: scrim.id },
-      data: { requesterScore, opponentScore, ratingDelta: delta },
+      data: { requesterScore, opponentScore, ratingDelta: deltaA, opponentRatingDelta: deltaB },
       include: scrimInclude,
     });
     await logEvent(tx, s.id, user.id, "RESULT",

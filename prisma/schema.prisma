@@ -86,7 +86,7 @@ model Team {
   region      String   @default("LAN")
   color       String   @default("#C8AA6E")
   inviteCode  String   @unique
-  rating      Int      @default(6000)
+  rating      Int      @default(0)
   description String?
   createdAt   DateTime @default(now())
 
@@ -125,9 +125,10 @@ model Scrim {
   proposedByTeam   Team?     @relation("ProposalTeam", fields: [proposedByTeamId], references: [id], onDelete: SetNull)
 
   // Resultado (juegos ganados por cada equipo)
-  requesterScore Int?
-  opponentScore  Int?
-  ratingDelta    Int?
+  requesterScore      Int?
+  opponentScore       Int?
+  ratingDelta         Int? // puntos que ganó o perdió el equipo que propuso el scrim
+  opponentRatingDelta Int? // puntos del rival (distinto del anterior cuando un equipo toca el piso de 0)
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt

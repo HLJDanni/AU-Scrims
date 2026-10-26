@@ -36,8 +36,8 @@ async function wins(winner: string, loser: string, count: number) {
 const login = (u: string) => new ApiClient().login(u, PASSWORD);
 
 beforeAll(async () => {
-  for (const [i, tag] of tags.entries()) await createTeam(tag, 7600 - i * 100);
-  await createTeam(lowTag, 7800);
+  for (const [i, tag] of tags.entries()) await createTeam(tag, 1600 - i * 100);
+  await createTeam(lowTag, 1800);
   // Cada equipo de prueba gana 10 scrims; el de bajo historial solo 9
   for (const [i, tag] of tags.entries()) await wins(tag, tags[(i + 1) % tags.length], 10);
   await wins(lowTag, tags[0], 9);

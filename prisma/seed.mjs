@@ -116,7 +116,7 @@ async function main() {
   }
   const users = await db.user.findMany();
   const coachOf = (teamId) => users.find((u) => u.teamId === teamId && u.role === "COACH");
-  const ratings = Object.fromEntries(teams.map((t) => [t.id, 6000]));
+  const ratings = Object.fromEntries(teams.map((t) => [t.id, 0]));
 
   // Historial: ~30 scrims jugados en las últimas 5 semanas
   const strength = { AU: 0.62, HXW: 0.7, NXV: 0.55, VOID: 0.45, FRF: 0.5, ION: 0.6, DMC: 0.4, SHR: 0.35 };
@@ -131,9 +131,12 @@ async function main() {
     for (let g = 0; g < games; g++) if (rand() < strength[a.tag] / (strength[a.tag] + strength[b.tag])) wa++;
     const wb = games - wa;
     const startAt = at(-35 + i, 18 + (i % 4));
+    // Mismo cálculo que la app: nadie baja de 0
     const delta = elo(ratings[a.id], ratings[b.id], wa, wb);
-    ratings[a.id] += delta;
-    ratings[b.id] -= delta;
+    const deltaA = Math.max(ratings[a.id] + delta, 0) - ratings[a.id];
+    const deltaB = Math.max(ratings[b.id] - delta, 0) - ratings[b.id];
+    ratings[a.id] += deltaA;
+    ratings[b.id] += deltaB;
     const scrim = await db.scrim.create({
       data: {
         requesterTeamId: a.id,
@@ -145,7 +148,8 @@ async function main() {
         status: "COMPLETED",
         requesterScore: wa,
         opponentScore: wb,
-        ratingDelta: delta,
+        ratingDelta: deltaA,
+        opponentRatingDelta: deltaB,
         roomLink: "https://discord.gg/auscrims",
       },
     });

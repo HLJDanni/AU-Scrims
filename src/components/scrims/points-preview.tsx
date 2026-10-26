@@ -1,7 +1,7 @@
 "use client";
 import { TrendingUp } from "lucide-react";
 import { cn } from "@/lib/client";
-import { eloDelta, expectedScore, pointsAtStake } from "@/lib/elo";
+import { applyResult, expectedScore, pointsAtStake } from "@/lib/elo";
 
 const signed = (n: number) => `${n > 0 ? "+" : n < 0 ? "−" : "±"}${Math.abs(n)}`;
 const tone = (n: number) => (n > 0 ? "text-win" : n < 0 ? "text-blood" : "text-stone-300");
@@ -58,7 +58,7 @@ export function PointsPreview({
         ))}
       </div>
       <p className="mt-2 text-[10px] text-stone-400">
-        Estimado con los ratings actuales. Rendir mejor de lo esperado suma aunque pierdas el scrim. Si el marcador no completa todos los juegos, se calcula con los
+        Estimado con los ratings actuales. Rendir mejor de lo esperado suma aunque pierdas el scrim; nadie baja de 0 puntos. Si el marcador no completa todos los juegos, se calcula con los
         jugados.
       </p>
     </div>
@@ -68,10 +68,10 @@ export function PointsPreview({
 /** Puntos exactos para un marcador concreto (registro de resultado). */
 export function ResultPoints({ myRating, rivalRating, mine, theirs, myTag, rivalTag }: { myRating: number; rivalRating: number; mine: number; theirs: number; myTag: string; rivalTag: string }) {
   if (mine + theirs === 0) return <p className="text-center text-xs text-stone-400">Elige el marcador para ver cuántos puntos cambian.</p>;
-  const d = eloDelta(myRating, rivalRating, mine, theirs);
+  const { deltaA: d, deltaB: r } = applyResult(myRating, rivalRating, mine, theirs);
   return (
     <p className="text-center text-xs text-stone-300">
-      Con {mine}-{theirs}: <b className={tone(d)}>{signed(d)} pts</b> para [{myTag}] · <b className={tone(-d)}>{signed(-d)} pts</b> para [{rivalTag}]
+      Con {mine}-{theirs}: <b className={tone(d)}>{signed(d)} pts</b> para [{myTag}] · <b className={tone(r)}>{signed(r)} pts</b> para [{rivalTag}]
     </p>
   );
 }

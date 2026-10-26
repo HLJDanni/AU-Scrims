@@ -86,25 +86,25 @@ describe("Unitarias · motor suizo y elegibilidad", () => {
     const five = (tier: "MASTER" | "DIAMOND" | "PLATINUM" | "GOLD", division: number | null, lp = 50) =>
       (["TOP", "JUNGLE", "MID", "ADC", "SUPPORT"] as const).map((position) => ({ position, tier, division, lp }));
 
-    const elite = evaluateEligibility({ rating: 7400, scrimWins: 12, players: five("MASTER", null, 300) });
+    const elite = evaluateEligibility({ rating: 1400, scrimWins: 12, players: five("MASTER", null, 300) });
     expect(elite.division).toBe("ELITE");
     expect(elite.checks.every((c) => c.ok)).toBe(true);
 
-    expect(evaluateEligibility({ rating: 7100, scrimWins: 10, players: five("DIAMOND", 3) }).division).toBe("ASCENSO");
-    expect(evaluateEligibility({ rating: 7100, scrimWins: 10, players: five("PLATINUM", 2, 0) }).division).toBe("ASCENSO"); // límite inferior
-    const plat3 = evaluateEligibility({ rating: 7100, scrimWins: 10, players: five("PLATINUM", 3, 99) });
+    expect(evaluateEligibility({ rating: 1100, scrimWins: 10, players: five("DIAMOND", 3) }).division).toBe("ASCENSO");
+    expect(evaluateEligibility({ rating: 1100, scrimWins: 10, players: five("PLATINUM", 2, 0) }).division).toBe("ASCENSO"); // límite inferior
+    const plat3 = evaluateEligibility({ rating: 1100, scrimWins: 10, players: five("PLATINUM", 3, 99) });
     expect(plat3.division).toBeNull();
     expect(plat3.checks.find((c) => c.id === "elo")!.ok).toBe(false);
 
-    const lowRating = evaluateEligibility({ rating: 6999, scrimWins: 15, players: five("MASTER", null) });
+    const lowRating = evaluateEligibility({ rating: 999, scrimWins: 15, players: five("MASTER", null) });
     expect(lowRating.division).toBeNull();
     expect(lowRating.eloDivision).toBe("ELITE"); // tendría la división por ELO, pero no el rating
     expect(lowRating.checks.find((c) => c.id === "rating")!.detail).toMatch(/faltan 1/);
 
-    expect(evaluateEligibility({ rating: 7500, scrimWins: 9, players: five("MASTER", null) }).division).toBeNull();
-    expect(evaluateEligibility({ rating: 7500, scrimWins: 20, players: five("MASTER", null).slice(0, 4) }).division).toBeNull();
+    expect(evaluateEligibility({ rating: 1500, scrimWins: 9, players: five("MASTER", null) }).division).toBeNull();
+    expect(evaluateEligibility({ rating: 1500, scrimWins: 20, players: five("MASTER", null).slice(0, 4) }).division).toBeNull();
     // Los suplentes no cuentan para el promedio
     const withSub = [...five("DIAMOND", 1), { position: "SUB" as const, tier: "GOLD" as const, division: 4, lp: 0 }];
-    expect(evaluateEligibility({ rating: 7000, scrimWins: 10, players: withSub }).division).toBe("ASCENSO");
+    expect(evaluateEligibility({ rating: 1000, scrimWins: 10, players: withSub }).division).toBe("ASCENSO");
   });
 });

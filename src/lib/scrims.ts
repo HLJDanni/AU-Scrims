@@ -42,7 +42,7 @@ export function toDTO(s: ScrimWithTeams, teamId: string): ScrimDTO {
         : null,
     myScore: isHost ? s.requesterScore : s.opponentScore,
     opponentScore: isHost ? s.opponentScore : s.requesterScore,
-    ratingDelta: s.ratingDelta == null ? null : isHost ? s.ratingDelta : -s.ratingDelta,
+    ratingDelta: s.ratingDelta == null ? null : isHost ? s.ratingDelta : (s.opponentRatingDelta ?? -s.ratingDelta),
     createdAt: s.createdAt.toISOString(),
     updatedAt: s.updatedAt.toISOString(),
   };

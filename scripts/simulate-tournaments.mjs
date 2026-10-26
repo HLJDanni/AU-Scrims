@@ -18,31 +18,31 @@ const db = new PrismaClient();
 // ---------- Datos de los escenarios ----------
 const P = (tier, division, lp) => ({ tier, division, lp });
 const TEAMS = [
-  // División Barón: ELO promedio Maestro+, ≥7000 pts, ≥10 scrims ganados
-  { tag: "CLD", name: "Celestial Dawn", color: "#F4C874", group: "elite", target: 7850, wins: 16, ranks: [P("CHALLENGER", null, 1180), P("GRANDMASTER", null, 640), P("CHALLENGER", null, 1050), P("GRANDMASTER", null, 720), P("MASTER", null, 410)] },
-  { tag: "ABK", name: "Abyss Kings", color: "#9D48E0", group: "elite", target: 7600, wins: 14, ranks: [P("GRANDMASTER", null, 560), P("MASTER", null, 380), P("CHALLENGER", null, 1010), P("MASTER", null, 290), P("GRANDMASTER", null, 530)] },
-  { tag: "IPX", name: "Iron Phoenix", color: "#E84057", group: "elite", target: 7450, wins: 13, ranks: [P("MASTER", null, 320), P("GRANDMASTER", null, 600), P("MASTER", null, 270), P("MASTER", null, 410), P("MASTER", null, 150)] },
-  { tag: "SFL", name: "Starfall Legion", color: "#576BCE", group: "elite", target: 7300, wins: 12, ranks: [P("MASTER", null, 210), P("MASTER", null, 180), P("GRANDMASTER", null, 515), P("MASTER", null, 90), P("MASTER", null, 260)] },
-  { tag: "CRO", name: "Crimson Oath", color: "#C86B3C", group: "elite", target: 7150, wins: 11, ranks: [P("MASTER", null, 140), P("MASTER", null, 60), P("MASTER", null, 220), P("DIAMOND", 1, 80), P("MASTER", null, 310)] },
-  { tag: "ETT", name: "Eternal Tide", color: "#0AC8B9", group: "elite", target: 7050, wins: 10, ranks: [P("MASTER", null, 110), P("MASTER", null, 75), P("MASTER", null, 160), P("MASTER", null, 40), P("GRANDMASTER", null, 505)] },
+  // División Barón: ELO promedio Maestro+, ≥1000 pts, ≥10 scrims ganados
+  { tag: "CLD", name: "Celestial Dawn", color: "#F4C874", group: "elite", target: 1850, wins: 16, ranks: [P("CHALLENGER", null, 1180), P("GRANDMASTER", null, 640), P("CHALLENGER", null, 1050), P("GRANDMASTER", null, 720), P("MASTER", null, 410)] },
+  { tag: "ABK", name: "Abyss Kings", color: "#9D48E0", group: "elite", target: 1600, wins: 14, ranks: [P("GRANDMASTER", null, 560), P("MASTER", null, 380), P("CHALLENGER", null, 1010), P("MASTER", null, 290), P("GRANDMASTER", null, 530)] },
+  { tag: "IPX", name: "Iron Phoenix", color: "#E84057", group: "elite", target: 1450, wins: 13, ranks: [P("MASTER", null, 320), P("GRANDMASTER", null, 600), P("MASTER", null, 270), P("MASTER", null, 410), P("MASTER", null, 150)] },
+  { tag: "SFL", name: "Starfall Legion", color: "#576BCE", group: "elite", target: 1300, wins: 12, ranks: [P("MASTER", null, 210), P("MASTER", null, 180), P("GRANDMASTER", null, 515), P("MASTER", null, 90), P("MASTER", null, 260)] },
+  { tag: "CRO", name: "Crimson Oath", color: "#C86B3C", group: "elite", target: 1150, wins: 11, ranks: [P("MASTER", null, 140), P("MASTER", null, 60), P("MASTER", null, 220), P("DIAMOND", 1, 80), P("MASTER", null, 310)] },
+  { tag: "ETT", name: "Eternal Tide", color: "#0AC8B9", group: "elite", target: 1050, wins: 10, ranks: [P("MASTER", null, 110), P("MASTER", null, 75), P("MASTER", null, 160), P("MASTER", null, 40), P("GRANDMASTER", null, 505)] },
   // División Heraldo: ELO promedio Platino II – Diamante I. Son 7 → habrá descansos
-  { tag: "JDS", name: "Jade Serpents", color: "#2DD4A8", group: "ascenso", target: 7500, wins: 14, ranks: [P("DIAMOND", 1, 70), P("DIAMOND", 2, 40), P("DIAMOND", 1, 20), P("DIAMOND", 3, 55), P("DIAMOND", 2, 10)] },
-  { tag: "STR", name: "Storm Riders", color: "#576BCE", group: "ascenso", target: 7350, wins: 13, ranks: [P("DIAMOND", 3, 60), P("DIAMOND", 4, 30), P("EMERALD", 1, 75), P("DIAMOND", 2, 20), P("DIAMOND", 4, 90)] },
-  { tag: "OBW", name: "Obsidian Wolves", color: "#A09B8C", group: "ascenso", target: 7250, wins: 12, ranks: [P("EMERALD", 1, 40), P("EMERALD", 2, 65), P("DIAMOND", 4, 15), P("EMERALD", 1, 90), P("EMERALD", 3, 30)] },
-  { tag: "SVA", name: "Silver Arrows", color: "#F0E6D2", group: "ascenso", target: 7150, wins: 11, ranks: [P("EMERALD", 3, 50), P("EMERALD", 2, 20), P("EMERALD", 4, 70), P("EMERALD", 2, 85), P("EMERALD", 3, 10)] },
-  { tag: "EMG", name: "Ember Guard", color: "#C89B3C", group: "ascenso", target: 7080, wins: 10, ranks: [P("PLATINUM", 1, 60), P("EMERALD", 4, 30), P("PLATINUM", 1, 90), P("EMERALD", 4, 5), P("PLATINUM", 2, 70)] },
-  { tag: "TDF", name: "Tidal Force", color: "#0397AB", group: "ascenso", target: 7020, wins: 10, ranks: [P("PLATINUM", 2, 40), P("PLATINUM", 1, 15), P("PLATINUM", 2, 80), P("EMERALD", 4, 50), P("PLATINUM", 1, 35)] },
-  { tag: "GRV", name: "Grove Vanguard", color: "#2DD4A8", group: "ascenso", target: 7010, wins: 10, ranks: [P("PLATINUM", 2, 10), P("PLATINUM", 2, 55), P("PLATINUM", 1, 20), P("PLATINUM", 2, 30), P("PLATINUM", 2, 5)] },
+  { tag: "JDS", name: "Jade Serpents", color: "#2DD4A8", group: "ascenso", target: 1500, wins: 14, ranks: [P("DIAMOND", 1, 70), P("DIAMOND", 2, 40), P("DIAMOND", 1, 20), P("DIAMOND", 3, 55), P("DIAMOND", 2, 10)] },
+  { tag: "STR", name: "Storm Riders", color: "#576BCE", group: "ascenso", target: 1350, wins: 13, ranks: [P("DIAMOND", 3, 60), P("DIAMOND", 4, 30), P("EMERALD", 1, 75), P("DIAMOND", 2, 20), P("DIAMOND", 4, 90)] },
+  { tag: "OBW", name: "Obsidian Wolves", color: "#A09B8C", group: "ascenso", target: 1250, wins: 12, ranks: [P("EMERALD", 1, 40), P("EMERALD", 2, 65), P("DIAMOND", 4, 15), P("EMERALD", 1, 90), P("EMERALD", 3, 30)] },
+  { tag: "SVA", name: "Silver Arrows", color: "#F0E6D2", group: "ascenso", target: 1150, wins: 11, ranks: [P("EMERALD", 3, 50), P("EMERALD", 2, 20), P("EMERALD", 4, 70), P("EMERALD", 2, 85), P("EMERALD", 3, 10)] },
+  { tag: "EMG", name: "Ember Guard", color: "#C89B3C", group: "ascenso", target: 1080, wins: 10, ranks: [P("PLATINUM", 1, 60), P("EMERALD", 4, 30), P("PLATINUM", 1, 90), P("EMERALD", 4, 5), P("PLATINUM", 2, 70)] },
+  { tag: "TDF", name: "Tidal Force", color: "#0397AB", group: "ascenso", target: 1020, wins: 10, ranks: [P("PLATINUM", 2, 40), P("PLATINUM", 1, 15), P("PLATINUM", 2, 80), P("EMERALD", 4, 50), P("PLATINUM", 1, 35)] },
+  { tag: "GRV", name: "Grove Vanguard", color: "#2DD4A8", group: "ascenso", target: 1010, wins: 10, ranks: [P("PLATINUM", 2, 10), P("PLATINUM", 2, 55), P("PLATINUM", 1, 20), P("PLATINUM", 2, 30), P("PLATINUM", 2, 5)] },
   // Casi elegibles: cumplen todo menos un requisito
-  { tag: "RKT", name: "Rookie Titans", color: "#E84057", group: "near", note: "ELO Maestro pero solo 7 scrims ganados", target: 7400, wins: 7, ranks: [P("MASTER", null, 200), P("MASTER", null, 120), P("GRANDMASTER", null, 510), P("MASTER", null, 80), P("MASTER", null, 300)] },
-  { tag: "GLC", name: "Glass Cannon", color: "#576BCE", group: "near", note: "ELO Diamante y 12 victorias, pero 6.850 pts", target: 6850, wins: 12, ranks: [P("DIAMOND", 1, 50), P("DIAMOND", 2, 30), P("DIAMOND", 1, 80), P("DIAMOND", 3, 10), P("DIAMOND", 2, 60)] },
-  { tag: "LWL", name: "Lowland Lions", color: "#C89B3C", group: "near", note: "7.200 pts y 11 victorias, pero ELO Platino III", target: 7200, wins: 11, ranks: [P("PLATINUM", 3, 50), P("PLATINUM", 3, 20), P("PLATINUM", 4, 90), P("PLATINUM", 3, 70), P("PLATINUM", 3, 40)] },
-  { tag: "HFR", name: "Half Roster", color: "#9D48E0", group: "near", note: "Cumple pts y victorias, pero solo 3 titulares registrados", target: 7300, wins: 12, ranks: [P("MASTER", null, 300), P("GRANDMASTER", null, 600), P("MASTER", null, 150)] },
+  { tag: "RKT", name: "Rookie Titans", color: "#E84057", group: "near", note: "ELO Maestro pero solo 7 scrims ganados", target: 1400, wins: 7, ranks: [P("MASTER", null, 200), P("MASTER", null, 120), P("GRANDMASTER", null, 510), P("MASTER", null, 80), P("MASTER", null, 300)] },
+  { tag: "GLC", name: "Glass Cannon", color: "#576BCE", group: "near", note: "ELO Diamante y 12 victorias, pero 850 pts", target: 850, wins: 12, ranks: [P("DIAMOND", 1, 50), P("DIAMOND", 2, 30), P("DIAMOND", 1, 80), P("DIAMOND", 3, 10), P("DIAMOND", 2, 60)] },
+  { tag: "LWL", name: "Lowland Lions", color: "#C89B3C", group: "near", note: "1.200 pts y 11 victorias, pero ELO Platino III", target: 1200, wins: 11, ranks: [P("PLATINUM", 3, 50), P("PLATINUM", 3, 20), P("PLATINUM", 4, 90), P("PLATINUM", 3, 70), P("PLATINUM", 3, 40)] },
+  { tag: "HFR", name: "Half Roster", color: "#9D48E0", group: "near", note: "Cumple pts y victorias, pero solo 3 titulares registrados", target: 1300, wins: 12, ranks: [P("MASTER", null, 300), P("GRANDMASTER", null, 600), P("MASTER", null, 150)] },
   // Academias: rivales de práctica, lejos de cualquier requisito
-  { tag: "ACN", name: "Academia Norte", color: "#7B7A72", group: "academy", start: 5600, wins: 0, ranks: [P("GOLD", 2, 40), P("GOLD", 1, 20), P("SILVER", 1, 70), P("GOLD", 3, 10), P("GOLD", 4, 55)] },
-  { tag: "ACS", name: "Academia Sur", color: "#7B7A72", group: "academy", start: 5550, wins: 0, ranks: [P("SILVER", 2, 40), P("GOLD", 4, 20), P("SILVER", 1, 90), P("GOLD", 4, 10), P("SILVER", 3, 50)] },
-  { tag: "ACE", name: "Academia Este", color: "#7B7A72", group: "academy", start: 5500, wins: 0, ranks: [P("GOLD", 1, 40), P("PLATINUM", 4, 20), P("GOLD", 2, 30), P("GOLD", 1, 75), P("GOLD", 3, 60)] },
-  { tag: "ACO", name: "Academia Oeste", color: "#7B7A72", group: "academy", start: 5450, wins: 0, ranks: [P("SILVER", 1, 20), P("SILVER", 2, 45), P("GOLD", 4, 30), P("SILVER", 1, 10), P("BRONZE", 1, 80)] },
+  { tag: "ACN", name: "Academia Norte", color: "#7B7A72", group: "academy", start: 600, wins: 0, ranks: [P("GOLD", 2, 40), P("GOLD", 1, 20), P("SILVER", 1, 70), P("GOLD", 3, 10), P("GOLD", 4, 55)] },
+  { tag: "ACS", name: "Academia Sur", color: "#7B7A72", group: "academy", start: 550, wins: 0, ranks: [P("SILVER", 2, 40), P("GOLD", 4, 20), P("SILVER", 1, 90), P("GOLD", 4, 10), P("SILVER", 3, 50)] },
+  { tag: "ACE", name: "Academia Este", color: "#7B7A72", group: "academy", start: 500, wins: 0, ranks: [P("GOLD", 1, 40), P("PLATINUM", 4, 20), P("GOLD", 2, 30), P("GOLD", 1, 75), P("GOLD", 3, 60)] },
+  { tag: "ACO", name: "Academia Oeste", color: "#7B7A72", group: "academy", start: 450, wins: 0, ranks: [P("SILVER", 1, 20), P("SILVER", 2, 45), P("GOLD", 4, 30), P("SILVER", 1, 10), P("BRONZE", 1, 80)] },
 ];
 const POS = ["TOP", "JUNGLE", "MID", "ADC", "SUPPORT"];
 const ROLES = [["COACH", "coach"], ["ANALYST", "analyst"], ["CAPTAIN", "cap"]];
@@ -96,10 +96,14 @@ async function seedScenarioData() {
   for (let it = 0; it < 8; it++) {
     const r = new Map(startOf);
     for (const s of schedule) {
-      const d = elo(r.get(s.team.tag), r.get(s.academy.tag), s.score[0], s.score[1]);
-      s.delta = d;
-      r.set(s.team.tag, r.get(s.team.tag) + d);
-      r.set(s.academy.tag, r.get(s.academy.tag) - d);
+      const ra = r.get(s.team.tag);
+      const rb = r.get(s.academy.tag);
+      const d = elo(ra, rb, s.score[0], s.score[1]);
+      // Mismo cálculo que la app: nadie baja de 0
+      s.delta = Math.max(ra + d, 0) - ra;
+      s.opponentDelta = Math.max(rb - d, 0) - rb;
+      r.set(s.team.tag, ra + s.delta);
+      r.set(s.academy.tag, rb + s.opponentDelta);
     }
     finals = r;
     for (const t of competitors) startOf.set(t.tag, startOf.get(t.tag) + (t.target - r.get(t.tag)));
@@ -149,6 +153,7 @@ async function seedScenarioData() {
         requesterScore: s.score[0],
         opponentScore: s.score[1],
         ratingDelta: s.delta,
+        opponentRatingDelta: s.opponentDelta,
       },
     });
   }

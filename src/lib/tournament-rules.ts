@@ -4,7 +4,7 @@ import { eloAverage, formatRank, rankValue, type LolTier, type Position } from "
 // Ids internos (BD): ELITE se muestra como "División Barón" y ASCENSO como "División Heraldo"
 export type Division = "ELITE" | "ASCENSO";
 
-export const MIN_RATING = 7000;
+export const MIN_RATING = 1000;
 export const MIN_SCRIM_WINS = 10;
 export const MIN_RANKED_STARTERS = 5;
 export const MAX_TEAMS = 16;
