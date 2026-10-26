@@ -129,7 +129,7 @@ function Room({ scrimId }: { scrimId: string }) {
         <AnimatePresence mode="wait">
           <motion.div key={`${game?.number ?? "lobby"}-${game?.status ?? ""}`} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }} transition={{ duration: 0.25 }}>
             {!game ? (
-              <Lobby state={state} champs={champs} busy={busy} send={send} onShowGame={(n) => setView(n)} />
+              <Lobby state={state} champs={champs} busy={busy} send={send} onShowGame={(n) => setView(n)} onSaved={() => mutate()} />
             ) : game.status === "READY_CHECK" ? (
               <ReadyCheck state={state} game={game} busy={busy} send={send} />
             ) : (
@@ -228,7 +228,21 @@ function Switch({ checked, disabled, onChange, label }: { checked: boolean; disa
 
 type Send = (body: Record<string, unknown>, ok?: string) => Promise<boolean>;
 
-function Lobby({ state, champs, busy, send, onShowGame }: { state: DraftStateDTO; champs: ChampData; busy: boolean; send: Send; onShowGame: (n: number) => void }) {
+function Lobby({
+  state,
+  champs,
+  busy,
+  send,
+  onShowGame,
+  onSaved,
+}: {
+  state: DraftStateDTO;
+  champs: ChampData;
+  busy: boolean;
+  send: Send;
+  onShowGame: (n: number) => void;
+  onSaved: () => void;
+}) {
   const { settings, next } = state;
   const editable = settings.editable;
   const chooser = next?.chooserTeamId ? teamOf(state, next.chooserTeamId) : null;
@@ -288,6 +302,8 @@ function Lobby({ state, champs, busy, send, onShowGame }: { state: DraftStateDTO
             <p className="mt-2 text-sm text-stone-300">Ya se jugaron todos los drafts de la serie. Recuerda registrar el resultado del scrim en su detalle.</p>
           )}
         </div>
+
+        <SeriesScore state={state} onSaved={onSaved} />
 
         <div className="hex-panel p-5">
           <h2 className="mb-3 font-display text-sm font-bold uppercase tracking-[0.18em] text-gold-100">Juegos</h2>
@@ -821,36 +837,188 @@ function DoneCenter({ state, game, byId, busy, send, onNext }: { state: DraftSta
           <b style={{ color: SIDE.RED.color }}>[{teams[1].tag}]</b> {names(split.RED.picks)}
         </p>
       </div>
-      <div className="w-full">
-        <p className="mb-2 text-sm text-stone-300">{game.winnerTeamId ? "Ganador del juego" : "¿Quién ganó este juego?"}</p>
-        <div className="grid gap-2 sm:grid-cols-2">
-          {teams.map((t, i) => {
-            const won = game.winnerTeamId === t.id;
-            const side = i === 0 ? SIDE.BLUE : SIDE.RED;
-            return (
-              <button
-                key={t.id}
-                disabled={!state.canAct || busy || later}
-                onClick={() => send({ type: "winner", game: game.number, teamId: t.id }, `Ganador del juego ${game.number}: [${t.tag}]`)}
-                className={cn(
-                  "flex items-center justify-center gap-2 rounded-md border-2 px-4 py-3 font-display text-sm font-bold tracking-wide transition disabled:cursor-default",
-                  won ? "text-void-950" : "text-gold-50 hover:brightness-125",
-                  !won && game.winnerTeamId && "opacity-50",
-                )}
-                style={{ borderColor: side.color, background: won ? side.color : side.soft }}
-              >
-                {won && <Trophy className="h-4 w-4" />} {t.name}
-              </button>
-            );
-          })}
-        </div>
-      </div>
+      <GameResult state={state} game={game} teams={teams} busy={busy} send={send} locked={later} />
       {game.winnerTeamId && game.number < state.scrim.games && !later && (
         <Button onClick={onNext}>Siguiente juego · elegir lado</Button>
       )}
       {game.winnerTeamId && game.number >= state.scrim.games && (
-        <p className="text-xs text-stone-400">Fue el último juego de la serie. Registra el resultado del scrim desde su detalle.</p>
+        <p className="text-xs text-stone-400">Fue el último juego de la serie. En la pestaña Serie puedes pasar el marcador al ranking.</p>
       )}
+    </div>
+  );
+}
+
+/**
+ * Resultado del juego: se pega el Game ID de la partida y Riot dice qué lado ganó.
+ * El servidor comprueba que los campeones coincidan con el draft. Si Riot no la encuentra
+ * (o no hay clave configurada), se puede registrar el ganador a mano.
+ */
+function GameResult({
+  state,
+  game,
+  teams,
+  busy,
+  send,
+  locked,
+}: {
+  state: DraftStateDTO;
+  game: DraftGameDTO;
+  teams: DraftTeam[];
+  busy: boolean;
+  send: Send;
+  locked: boolean;
+}) {
+  const [gameId, setGameId] = useState("");
+  const [manual, setManual] = useState(!state.riotMatch);
+  const winner = game.winnerTeamId ? teamOf(state, game.winnerTeamId) : null;
+  const editable = state.canAct && !locked;
+
+  return (
+    <div className="w-full space-y-3">
+      {winner && (
+        <motion.div
+          initial={{ scale: 0.95, opacity: 0 }}
+          animate={{ scale: 1, opacity: 1 }}
+          className="flex flex-col items-center gap-1 rounded-md border border-gold-300/60 bg-gold-700/25 px-4 py-3"
+        >
+          <p className="flex items-center gap-2 font-display text-lg font-bold text-gold-50">
+            <Trophy className="h-5 w-5 text-gold-300" /> Ganó {winner.name}
+          </p>
+          <p className="text-[11px] text-stone-300">
+            {game.matchId ? (
+              <>
+                Verificado con Riot · <span className="font-mono text-gold-100">{game.matchId}</span>
+              </>
+            ) : (
+              "Registrado manualmente"
+            )}
+          </p>
+        </motion.div>
+      )}
+
+      {editable && (!winner || !game.matchId) && state.riotMatch && (
+        <form
+          onSubmit={async (e) => {
+            e.preventDefault();
+            if (await send({ type: "match", game: game.number, matchId: gameId }, "Partida verificada con Riot")) setGameId("");
+          }}
+          className="space-y-2 text-left"
+        >
+          <label htmlFor="game-id" className="label">
+            {winner ? "Verificar con el Game ID" : "Game ID de la partida"}
+          </label>
+          <div className="flex gap-2">
+            <input
+              id="game-id"
+              value={gameId}
+              onChange={(e) => setGameId(e.target.value)}
+              placeholder="LA1_1234567890 o solo el número"
+              className="field font-mono"
+              autoComplete="off"
+              required
+            />
+            <Button type="submit" loading={busy} disabled={gameId.trim().length < 6}>
+              <Check className="h-4 w-4" /> Verificar
+            </Button>
+          </div>
+          <p className="text-[11px] text-stone-400">
+            Al terminar la partida, en el cliente de LoL abre <b className="text-gold-100">Perfil → Historial</b>, entra a la partida y copia su ID. Riot indica qué lado ganó y la
+            victoria se asigna sola (también si en el lobby se cambiaron de lado).
+          </p>
+        </form>
+      )}
+
+      {editable && !winner && state.riotMatch && (
+        <button type="button" onClick={() => setManual((v) => !v)} className="text-[11px] text-stone-400 underline-offset-2 hover:text-gold-100 hover:underline">
+          {manual ? "Ocultar registro manual" : "¿Riot no encuentra la partida? Registrar el ganador manualmente"}
+        </button>
+      )}
+
+      {editable && manual && (
+        <div className="space-y-2">
+          {!state.riotMatch && <p className="text-xs text-stone-400">Sin RIOT_API_KEY no se pueden verificar partidas: elige el ganador.</p>}
+          <div className="grid gap-2 sm:grid-cols-2">
+            {teams.map((t, i) => {
+              const won = game.winnerTeamId === t.id;
+              const side = i === 0 ? SIDE.BLUE : SIDE.RED;
+              return (
+                <button
+                  key={t.id}
+                  disabled={busy}
+                  onClick={() => send({ type: "winner", game: game.number, teamId: t.id }, `Ganador del juego ${game.number}: [${t.tag}]`)}
+                  className={cn(
+                    "flex items-center justify-center gap-2 rounded-md border-2 px-4 py-2.5 font-display text-sm font-bold tracking-wide transition",
+                    won ? "text-void-950" : "text-gold-50 hover:brightness-125",
+                  )}
+                  style={{ borderColor: side.color, background: won ? side.color : side.soft }}
+                >
+                  {won && <Trophy className="h-4 w-4" />} Ganó {t.tag}
+                </button>
+              );
+            })}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+/** Marcador de la serie según los ganadores de cada juego, y paso del resultado al ranking. */
+function SeriesScore({ state, onSaved }: { state: DraftStateDTO; onSaved: () => void }) {
+  const [saving, setSaving] = useState(false);
+  const decided = state.games.filter((g) => g.winnerTeamId);
+  if (!decided.length) return null;
+  const mine = decided.filter((g) => g.winnerTeamId === state.myTeam.id).length;
+  const theirs = decided.length - mine;
+  const pending = state.games.some((g) => !g.winnerTeamId);
+  const done = state.scrim.status === "COMPLETED";
+  const started = Date.parse(state.scrim.startAt) <= Date.now();
+  const canSave = state.canAct && state.scrim.status === "CONFIRMED" && !pending && started;
+
+  async function save() {
+    if (!window.confirm(`¿Registrar el resultado ${state.myTeam.tag} ${mine} - ${theirs} ${state.rival.tag} en el ranking? Ya no se podrá cambiar.`)) return;
+    setSaving(true);
+    try {
+      await api(`/api/scrims/${state.scrim.id}/result`, { body: { myScore: mine, opponentScore: theirs } });
+      toast.success("Resultado registrado en el ranking");
+      onSaved();
+    } catch (err) {
+      toast.error((err as Error).message);
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  return (
+    <div className="hex-panel flex flex-col items-center gap-4 p-5 sm:flex-row sm:justify-between">
+      <div className="flex items-center gap-4">
+        <TeamEmblem team={state.myTeam} size={44} />
+        <p className="font-display text-3xl font-bold tabular-nums text-gold-50">
+          <span className={mine > theirs ? "text-win" : ""}>{mine}</span>
+          <span className="mx-2 text-stone-400">-</span>
+          <span className={theirs > mine ? "text-blood" : ""}>{theirs}</span>
+        </p>
+        <TeamEmblem team={state.rival} size={44} />
+      </div>
+      <div className="text-center sm:text-right">
+        {done ? (
+          <p className="flex items-center gap-1.5 text-sm font-semibold text-win">
+            <Check className="h-4 w-4" /> Resultado del scrim registrado en el ranking
+          </p>
+        ) : canSave ? (
+          <Button onClick={save} loading={saving}>
+            <Trophy className="h-4 w-4" /> Registrar en el ranking
+          </Button>
+        ) : (
+          <p className="max-w-xs text-xs text-stone-400">
+            {pending
+              ? "Falta el Game ID (o el ganador) de algún juego para cerrar la serie."
+              : !started
+                ? "El resultado se puede registrar cuando haya empezado el horario del scrim."
+                : "Solo el staff puede registrar el resultado."}
+          </p>
+        )}
+      </div>
     </div>
   );
 }

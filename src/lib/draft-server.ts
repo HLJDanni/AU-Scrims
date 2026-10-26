@@ -4,10 +4,13 @@ import { db } from "./db";
 import { fail } from "./api";
 import { chatWritable, systemMessage } from "./chat";
 import { getChampions } from "./champions";
+import { RiotError, fetchMatchResult, parseGameId, riotEnabled, riotHttpStatus } from "./riot";
 import {
   DRAFT_ORDER,
   TURN_SECONDS,
+  MIN_MATCHING_CHAMPIONS,
   fearlessLocked,
+  matchSides,
   sideChooser,
   splitActions,
   unavailableReason,
@@ -38,6 +41,7 @@ export function toGameDTO(g: DraftGame): DraftGameDTO {
     hover: g.hover,
     turnEndsAt: g.turnEndsAt?.toISOString() ?? null,
     winnerTeamId: g.winnerTeamId,
+    matchId: g.matchId,
   };
 }
 
@@ -127,6 +131,7 @@ export async function draftState(scrim: ChatScrim, games: DraftGame[], user: { t
     games: games.map(toGameDTO),
     next,
     canAct,
+    riotMatch: riotEnabled(),
     serverTime: new Date().toISOString(),
   };
 }
@@ -138,6 +143,7 @@ export type DraftCommand =
   | { type: "hover"; game: number; step: number; champion: string | null }
   | { type: "lock"; game: number; step: number; champion: string | null }
   | { type: "winner"; game: number; teamId: string }
+  | { type: "match"; game: number; matchId: string }
   | { type: "reset"; game: number };
 
 /** Ejecuta una acción del draft validando turnos, equipos y reglas. */
@@ -228,9 +234,52 @@ export async function runCommand(scrim: ChatScrim, games: DraftGame[], user: { i
       if (games.some((x) => x.number > g.number)) fail(400, "El siguiente juego ya comenzó: el ganador no se puede cambiar");
       if (g.winnerTeamId === cmd.teamId) return;
       await db.$transaction(async (tx) => {
-        await tx.draftGame.update({ where: { id: g.id }, data: { winnerTeamId: cmd.teamId } });
+        // Un ganador manual reemplaza al verificado (por ejemplo, si se pegó un Game ID equivocado)
+        await tx.draftGame.update({ where: { id: g.id }, data: { winnerTeamId: cmd.teamId, matchId: null } });
         const more = g.number < scrim.games ? ` [${tagOf(scrim, cmd.teamId === g.blueTeamId ? g.redTeamId : g.blueTeamId)}] elige lado para el juego ${g.number + 1}.` : "";
-        await systemMessage(tx, scrim.id, `${user.username} registró que [${tagOf(scrim, cmd.teamId)}] ganó el juego ${g.number}.${more}`);
+        await systemMessage(tx, scrim.id, `${user.username} registró manualmente que [${tagOf(scrim, cmd.teamId)}] ganó el juego ${g.number}.${more}`);
+      });
+      return;
+    }
+
+    case "match": {
+      const g = needGame();
+      if (g.status !== "DONE") fail(400, "Termina el draft antes de registrar la partida");
+      if (games.some((x) => x.number > g.number)) fail(400, "El siguiente juego ya comenzó: el resultado no se puede cambiar");
+      if (!riotEnabled()) fail(503, "Falta configurar RIOT_API_KEY para verificar partidas: registra el ganador manualmente");
+      const matchId = parseGameId(cmd.matchId, scrim.requesterTeam.region ?? "LAN");
+      if (!matchId) fail(422, "Ese no parece un Game ID. Ejemplo: LA1_1234567890 o solo el número");
+      if (g.matchId === matchId) return;
+      const used = await db.draftGame.findUnique({ where: { matchId: matchId! }, select: { number: true, scrimId: true } });
+      if (used) fail(409, used.scrimId === scrim.id ? `Ese Game ID ya se registró en el juego ${used.number}` : "Ese Game ID ya se registró en otro scrim");
+
+      let result;
+      try {
+        result = await fetchMatchResult(matchId!);
+      } catch (e) {
+        if (e instanceof RiotError) fail(riotHttpStatus(e), e.message);
+        throw e;
+      }
+      // La partida debe ser posterior al draft y con los campeones que se eligieron
+      if (result.startedAt.getTime() < g.createdAt.getTime() - 10 * 60_000) fail(409, "Esa partida se jugó antes de este draft: revisa el Game ID");
+      const side = splitActions(actionsOf(g));
+      const { swapped, matched } = matchSides({ blue: side.BLUE.picks, red: side.RED.picks }, result.champions);
+      if (matched < MIN_MATCHING_CHAMPIONS)
+        fail(409, `Los campeones de ${matchId} no coinciden con el draft del juego ${g.number} (coinciden ${matched} de 10). Revisa el Game ID.`);
+
+      // El lado 100 del cliente es el azul; si en el lobby se cambiaron de lado, se respeta quién jugó qué
+      const blueWon = (result.winnerSide === 100) !== swapped;
+      const winnerTeamId = blueWon ? g.blueTeamId : g.redTeamId;
+      const loserTeamId = blueWon ? g.redTeamId : g.blueTeamId;
+      await db.$transaction(async (tx) => {
+        await tx.draftGame.update({ where: { id: g.id }, data: { winnerTeamId, matchId } });
+        const minutes = Math.round(result.durationSec / 60);
+        const more = g.number < scrim.games ? ` [${tagOf(scrim, loserTeamId)}] elige lado para el juego ${g.number + 1}.` : "";
+        await systemMessage(
+          tx,
+          scrim.id,
+          `Juego ${g.number} verificado con Riot (${matchId}, ${minutes} min): ganó [${tagOf(scrim, winnerTeamId)}] con el lado ${(result.winnerSide === 100) ? "azul" : "rojo"}.${swapped ? " En la partida jugaron con los lados cambiados." : ""}${more}`,
+        );
       });
       return;
     }

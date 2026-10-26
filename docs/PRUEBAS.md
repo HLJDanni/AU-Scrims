@@ -1,6 +1,6 @@
 # Plan y resultados de pruebas · AU Scrims
 
-**Fecha de ejecución:** 24/10/2026 · **Entorno:** Docker local (app `:3000`, PostgreSQL `:5434`), datos demo · **Resultado global:** 33/33 pruebas automatizadas aprobadas
+**Fecha de ejecución:** 24/10/2026 · **Entorno:** Docker local (app `:3000`, PostgreSQL `:5434`), datos demo · **Resultado global:** 35/35 pruebas automatizadas aprobadas
 
 ## Cómo ejecutarlas
 
@@ -33,6 +33,7 @@ Las pruebas de caja negra, integración y E2E usan los usuarios demo y limpian l
 | Unitaria | U11 | `tests/unit/elo.test.ts` | Piso de 0 puntos: equipos nuevos no pierden puntos, el perdedor solo pierde lo que tiene y el ganador suma completo | ✅ |
 | Unitaria | U12 | `tests/unit/draft.test.ts` | Orden profesional del draft: 20 acciones, 5 baneos y 5 picks por lado, fases y slots | ✅ |
 | Unitaria | U13 | `tests/unit/draft.test.ts` | Fearless bloquea lo elegido (no lo baneado) en juegos anteriores; elección de lado: invitado en el juego 1, luego el perdedor | ✅ |
+| Unitaria | U14 | `tests/unit/riot.test.ts` | Game ID: formatos aceptados (con o sin servidor), clúster de match-v5 (OCE → sea), ganador y campeones por lado, detección de lados cambiados y partida inexistente | ✅ |
 | Unitaria | S1 | `tests/unit/swiss.test.ts` | Motor suizo: ronda 1 por siembra, Bo3 en partidos decisivos, descanso con impares (una vez por equipo), torneos de 4 a 16 equipos terminan en ≤5 partidos por equipo y nunca hay revancha si existía alternativa | ✅ |
 | Unitaria | S2 | `tests/unit/swiss.test.ts` | Elegibilidad: Barón (Maestro+), Heraldo (Platino II–Diamante I, límites incluidos), rechazo por rating, victorias, roster o ELO; suplentes fuera del promedio | ✅ |
 | Caja blanca | W1 | `tests/whitebox/scrim-dto.test.ts` | `toDTO`: ramas anfitrión/invitado (marcador y delta invertidos), valores nulos | ✅ |
@@ -51,6 +52,7 @@ Las pruebas de caja negra, integración y E2E usan los usuarios demo y limpian l
 | Integración | I7 | `tests/integration/chat-draft.test.ts` | Draft: fearless, lado del invitado, listos, turnos (403 fuera de turno), repetido (409), resumen en el chat, ganador → el perdedor elige lado, tiempo agotado (baneo omitido, pick al azar o el seleccionado), bloqueo fearless entre juegos y reinicio | ✅ |
 | Integración | I8 | `tests/integration/team-identity.test.ts` | Imagen del equipo validada por contenido (un SVG disfrazado de PNG da 422), servida con CSP y solo con sesión; el capitán edita el emblema pero no el nombre (403); solo el coach asigna roles y no puede quedarse el equipo sin coach | ✅ |
 | Integración | I9 | `tests/integration/team-identity.test.ts` | La Leyenda que se une con código debe dar su op.gg (422 sin él o de otro servidor); entra al roster con su cuenta, sigue sin poder editarlo y, si el coach la quita, sale del roster | ✅ |
+| Integración | I10 | `tests/integration/match-result.test.ts` | Con la clave real y una partida pública de KR: ID inválido o inexistente 422, victoria asignada al equipo correcto con lados cambiados, aviso en el chat, ID repetido 409, campeones que no coinciden 409 y marcador de la serie al ranking | ✅ |
 | End-to-end | E1 | `tests/e2e/schedule-flow.spec.ts` | Crea su propio equipo, rival y coach temporales (y los borra al terminar). En el navegador: login → agendar con 5 juegos y link → Enviadas → detalle → Sala → copiar invitación → Actividad → cancelar | ✅ |
 | End-to-end | E2 | `tests/e2e/schedule-flow.spec.ts` | Con un scrim confirmado a 6 min: el aviso aparece con minutos restantes, cuenta regresiva y botón para unirse a la sala; al descartarlo desaparece y no vuelve al recargar | ✅ |
 
@@ -124,6 +126,7 @@ Además de las pruebas automatizadas, se hizo una verificación manual de los en
 | CA-33 | Coach y capitán editan el emblema; el coach asigna capitanes y roles | I8; revisado en el navegador (selector de rol en Mi equipo → Miembros) | ✅ Cumple |
 | CA-34 | La Leyenda que se une con código da su op.gg y queda integrada al roster del equipo | I9; revisado en el navegador (formulario de registro con op.gg y posición) | ✅ Cumple |
 | CA-35 | Un equipo tiene como máximo 3 suplentes | I3; en la interfaz el botón Suplente se desactiva al llegar a 3 y el contador muestra 3/3 | ✅ Cumple |
+| CA-36 | Al terminar un juego se pega el Game ID y la victoria se asigna al lado que ganó según Riot | U14, I10; revisado en el navegador (campo Game ID, error claro si Riot no la encuentra, registro manual como alternativa) | ✅ Cumple |
 
 ## Hallazgos corregidos durante las pruebas
 

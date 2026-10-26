@@ -218,6 +218,7 @@ model DraftGame {
   hover        String? // campeón que el equipo en turno tiene seleccionado sin confirmar
   turnEndsAt   DateTime?
   winnerTeamId String?
+  matchId      String?     @unique // Game ID de Riot (p. ej. LA1_1234567890) con el que se verificó el ganador
   createdAt    DateTime    @default(now())
   updatedAt    DateTime    @updatedAt
 

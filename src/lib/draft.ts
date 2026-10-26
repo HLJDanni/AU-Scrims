@@ -71,6 +71,24 @@ export function sideChooser(gameNumber: number, invitedTeamId: string, previous?
   return previous.winnerTeamId === previous.blueTeamId ? previous.redTeamId : previous.blueTeamId;
 }
 
+/** Mínimo de campeones (de 10) que deben coincidir entre el draft y la partida para aceptar el Game ID. */
+export const MIN_MATCHING_CHAMPIONS = 6;
+
+/**
+ * Compara los picks del draft con los campeones de la partida de Riot (100 = azul, 200 = rojo).
+ * Detecta si los equipos jugaron con los lados cambiados en el lobby y cuántos campeones coinciden.
+ */
+export function matchSides(draft: { blue: (string | null)[]; red: (string | null)[] }, game: { 100: string[]; 200: string[] }) {
+  const norm = (s: string) => s.toLowerCase().replace(/[^a-z0-9]/g, "");
+  const overlap = (picks: (string | null)[], champs: string[]) => {
+    const set = new Set(champs.map(norm));
+    return picks.filter((c): c is string => Boolean(c) && set.has(norm(c!))).length;
+  };
+  const straight = overlap(draft.blue, game[100]) + overlap(draft.red, game[200]);
+  const swapped = overlap(draft.blue, game[200]) + overlap(draft.red, game[100]);
+  return { swapped: swapped > straight, matched: Math.max(straight, swapped) };
+}
+
 export type DraftGameDTO = {
   number: number;
   status: "READY_CHECK" | "DRAFTING" | "DONE";
@@ -84,6 +102,7 @@ export type DraftGameDTO = {
   hover: string | null;
   turnEndsAt: string | null;
   winnerTeamId: string | null;
+  matchId: string | null;
 };
 
 export type DraftTeam = { id: string; name: string; tag: string; color: string; logoUpdatedAt: string | null };
@@ -97,5 +116,7 @@ export type DraftStateDTO = {
   /** Próximo juego por crear (elección de lado), o null si la serie ya tiene todos sus juegos. */
   next: { number: number; chooserTeamId: string | null } | null;
   canAct: boolean;
+  /** Hay RIOT_API_KEY: el ganador se verifica pegando el Game ID. */
+  riotMatch: boolean;
   serverTime: string;
 };

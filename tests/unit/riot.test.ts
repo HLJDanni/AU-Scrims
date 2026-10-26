@@ -1,6 +1,7 @@
 // Cliente de la API de Riot con fetch simulado: no consume cuota ni necesita una clave real.
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { RiotError, fetchRankedProfile } from "@/lib/riot";
+import { RiotError, fetchMatchResult, fetchRankedProfile, parseGameId } from "@/lib/riot";
+import { matchSides } from "@/lib/draft";
 
 type Route = { match: RegExp; status?: number; body?: unknown };
 
@@ -76,4 +77,40 @@ describe("Unitarias · cliente de la API de Riot", () => {
     expect(await err([account])).toBe("auth");
   });
 
+  it("U14 · Game ID: acepta el formato del cliente, consulta match-v5 en el clúster correcto y detecta lados cambiados", async () => {
+    expect(parseGameId("LA1_1234567890", "LAN")).toBe("LA1_1234567890");
+    expect(parseGameId(" 1234567890 ", "LAN")).toBe("LA1_1234567890"); // solo el número: servidor del equipo
+    expect(parseGameId("kr-8421752997", "LAN")).toBe("KR_8421752997");
+    expect(parseGameId("8421752997", "OCE")).toBe("OC1_8421752997");
+    expect(parseGameId("XX9_123456789", "LAN")).toBeNull(); // servidor desconocido
+    expect(parseGameId("https://op.gg/algo", "LAN")).toBeNull();
+
+    const match = {
+      info: {
+        gameStartTimestamp: 1_790_000_000_000,
+        gameDuration: 1800,
+        queueId: 0,
+        teams: [
+          { teamId: 100, win: false },
+          { teamId: 200, win: true },
+        ],
+        participants: ["Aatrox", "LeeSin", "Ahri", "Jinx", "Thresh"]
+          .map((championName) => ({ teamId: 100, championName }))
+          .concat(["Gnar", "Vi", "Orianna", "Kaisa", "Nautilus"].map((championName) => ({ teamId: 200, championName }))),
+      },
+    };
+    const calls = mockRiot([{ match: /^https:\/\/sea\.api\.riotgames\.com\/lol\/match\/v5\/matches\/OC1_42$/, body: match }]);
+    const r = await fetchMatchResult("OC1_42");
+    expect(calls[0].url).toMatch(/^https:\/\/sea\./); // OCE usa "sea" en match-v5
+    expect(r).toMatchObject({ winnerSide: 200, durationSec: 1800 });
+    expect(r.champions[200]).toContain("Kaisa");
+
+    // Draft con los lados al revés: el "azul" del draft jugó en el lado 200 y ganó
+    const sides = matchSides({ blue: ["Gnar", "Vi", "Orianna", "Kaisa", "Nautilus"], red: ["Aatrox", "LeeSin", "Ahri", "Jinx", "Thresh"] }, r.champions);
+    expect(sides).toEqual({ swapped: true, matched: 10 });
+    expect(matchSides({ blue: ["Aatrox", "Zed", null], red: ["Gnar"] }, r.champions)).toEqual({ swapped: false, matched: 2 });
+
+    mockRiot([{ match: /match\/v5/, status: 404 }]);
+    await expect(fetchMatchResult("LA1_1")).rejects.toThrow(/no encontró la partida LA1_1/);
+  });
 });

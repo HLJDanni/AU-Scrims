@@ -21,7 +21,7 @@ export class RiotError extends Error {
 
 export const riotEnabled = () => Boolean(process.env.RIOT_API_KEY?.trim());
 
-async function call<T>(url: string): Promise<T> {
+async function call<T>(url: string, notFound = "No existe una cuenta de Riot con ese Riot ID"): Promise<T> {
   let res: Response;
   try {
     res = await fetch(url, {
@@ -33,7 +33,7 @@ async function call<T>(url: string): Promise<T> {
     throw new RiotError("unavailable", "No se pudo conectar con la API de Riot");
   }
   if (res.ok) return (await res.json()) as T;
-  if (res.status === 404) throw new RiotError("not_found", "No existe una cuenta de Riot con ese Riot ID");
+  if (res.status === 404) throw new RiotError("not_found", notFound);
   if (res.status === 401 || res.status === 403)
     throw new RiotError("auth", "La API key de Riot no es válida o venció (las Development keys duran 24 h)");
   if (res.status === 429) throw new RiotError("rate_limit", "Se alcanzó el límite de consultas a Riot, intenta en unos segundos");
@@ -92,6 +92,55 @@ export async function fetchRankedProfile(region: string, gameName: string, tagLi
     wins: solo?.wins ?? null,
     losses: solo?.losses ?? null,
   };
+}
+
+// ---------- MATCH-V5: resultado de una partida por su Game ID ----------
+// Enrutamiento regional de match-v5 (OCE usa "sea", distinto de account-v1)
+const MATCH_REGIONAL: Record<string, string> = { LA1: "americas", LA2: "americas", NA1: "americas", BR1: "americas", EUW1: "europe", EUN1: "europe", KR: "asia", OC1: "sea" };
+export const MATCH_PLATFORM: Record<string, string> = Object.fromEntries(Object.entries(PLATFORM).map(([region, p]) => [region, p.toUpperCase()]));
+
+/**
+ * Normaliza lo que pega el usuario: "LA1_1234567890", "la1-1234567890" o solo el número (se usa el servidor del equipo).
+ * Devuelve el ID de match-v5 o null si no tiene forma de Game ID.
+ */
+export function parseGameId(input: string, region: string) {
+  const m = /^(?:([A-Za-z]{2,4}\d?)[_\s-]?)?(\d{6,13})$/.exec(input.trim());
+  if (!m) return null;
+  const platform = (m[1] ?? MATCH_PLATFORM[region] ?? "").toUpperCase();
+  if (!MATCH_REGIONAL[platform]) return null;
+  return `${platform}_${m[2]}`;
+}
+
+export type MatchResult = {
+  matchId: string;
+  startedAt: Date;
+  durationSec: number;
+  queueId: number;
+  winnerSide: 100 | 200;
+  champions: { 100: string[]; 200: string[] };
+};
+
+export async function fetchMatchResult(matchId: string): Promise<MatchResult> {
+  if (!riotEnabled()) throw new RiotError("auth", "Falta configurar RIOT_API_KEY");
+  const platform = matchId.split("_")[0];
+  type Match = {
+    info: {
+      gameStartTimestamp: number;
+      gameDuration: number;
+      queueId: number;
+      teams: { teamId: 100 | 200; win: boolean }[];
+      participants: { teamId: 100 | 200; championName: string }[];
+    };
+  };
+  const m = await call<Match>(
+    `https://${MATCH_REGIONAL[platform]}.api.riotgames.com/lol/match/v5/matches/${matchId}`,
+    `Riot no encontró la partida ${matchId}. Revisa el número y el servidor; una partida recién terminada puede tardar unos minutos en aparecer.`,
+  );
+  const winner = m.info.teams.find((t) => t.win)?.teamId;
+  if (!winner) throw new RiotError("not_found", "La partida no tiene un ganador registrado (¿se canceló o hubo remake?)");
+  const champions = { 100: [] as string[], 200: [] as string[] };
+  for (const p of m.info.participants) champions[p.teamId]?.push(p.championName);
+  return { matchId, startedAt: new Date(m.info.gameStartTimestamp), durationSec: m.info.gameDuration, queueId: m.info.queueId, winnerSide: winner, champions };
 }
 
 /** Traduce un error de Riot a un código HTTP para nuestra API. */

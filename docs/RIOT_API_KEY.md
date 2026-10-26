@@ -102,3 +102,6 @@ Con la **Development key** hay que repetir los pasos 1 y 2 cada día, porque ven
 | Validar Riot ID y obtener PUUID | `/riot/account/v1/accounts/by-riot-id/{gameName}/{tagLine}` | `americas` (LAN, LAS, NA, BR, OCE) · `europe` · `asia` |
 | Nivel de la cuenta | `/lol/summoner/v4/summoners/by-puuid/{puuid}` | `la1` LAN · `la2` LAS · `na1` · `br1` · `euw1` · `eun1` · `kr` · `oc1` |
 | Rango de SoloQ | `/lol/league/v4/entries/by-puuid/{puuid}` | igual que el anterior |
+| Ganador de un juego del draft (Game ID) | `/lol/match/v5/matches/{matchId}` | `americas` (LAN, LAS, NA, BR) · `europe` · `asia` · `sea` (OCE) |
+
+> El Game ID se pega como `LA1_1234567890` o solo el número (se usa el servidor del equipo). Las partidas personalizadas pueden tardar unos minutos en aparecer en la API; si Riot no la encuentra, el draft permite registrar el ganador a mano.
