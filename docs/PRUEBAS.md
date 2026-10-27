@@ -131,6 +131,7 @@ Además de las pruebas automatizadas, se hizo una verificación manual de los en
 | CA-36 | Al terminar un juego se pega el Game ID y la victoria se asigna al lado que ganó según Riot | U14, I10; revisado en el navegador (campo Game ID, error claro si Riot no la encuentra, registro manual como alternativa) | ✅ Cumple |
 | CA-37 | Solo un administrador de la app puede eliminar scrims (por ejemplo, de prueba), revirtiendo sus puntos | I11; revisado en el navegador (sección Administración, búsqueda y confirmación) | ✅ Cumple |
 | CA-38 | En el draft los campeones se filtran por posición, no por clase | U15; revisado en el navegador (filtros Jungla y Soporte) | ✅ Cumple |
+| CA-39 | Reiniciar el draft de un juego requiere la aprobación de ambos equipos | I7; revisado en el navegador (solicitud arriba del draft, aceptar reinicia y pide confirmar de nuevo) | ✅ Cumple |
 
 ## Hallazgos corregidos durante las pruebas
 

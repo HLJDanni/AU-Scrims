@@ -172,6 +172,7 @@ export const draftActionSchema = z.discriminatedUnion("type", [
   z.object({ type: z.literal("winner"), game: z.number().int().min(1).max(10), teamId: z.string().min(1) }),
   z.object({ type: z.literal("match"), game: z.number().int().min(1).max(10), matchId: z.string().trim().min(6, "Pega el Game ID de la partida").max(30) }),
   z.object({ type: z.literal("reset"), game: z.number().int().min(1).max(10) }),
+  z.object({ type: z.literal("resetCancel"), game: z.number().int().min(1).max(10) }),
 ]);
 
 export const memberRoleSchema = z.object({ role: roleSchema });

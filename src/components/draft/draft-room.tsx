@@ -510,6 +510,8 @@ function Board({ state, game, champs, busy, send, onNext }: { state: DraftStateD
 
   return (
     <div className="space-y-4">
+      {/* Una solicitud de reinicio pendiente va arriba para que el otro equipo la vea */}
+      {state.canAct && !game.winnerTeamId && game.resetRequestedBy && <ResetControl state={state} game={game} busy={busy} send={send} />}
       {/* Encabezado: equipos y reloj */}
       <div className="grid grid-cols-[1fr_auto_1fr] items-stretch gap-2 sm:gap-4">
         <TeamBanner team={blue} side="BLUE" active={turn?.side === "BLUE"} mine={blue.id === state.myTeam.id} />
@@ -561,19 +563,7 @@ function Board({ state, game, champs, busy, send, onNext }: { state: DraftStateD
         <PickColumn ids={split.RED.picks} side="RED" active={slotFor("RED", "PICK")} pending={pending} byId={byId} className="order-2 lg:order-3" />
       </div>
 
-      {state.canAct && !game.winnerTeamId && (
-        <div className="flex justify-center">
-          <button
-            onClick={() => {
-              if (confirm(`¿Reiniciar el draft del juego ${game.number}? Se borran sus baneos y picks y ambos equipos deben confirmar de nuevo.`))
-                send({ type: "reset", game: game.number }, "Draft reiniciado");
-            }}
-            className="flex items-center gap-1.5 text-[11px] text-stone-400 hover:text-blood"
-          >
-            <RotateCcw className="h-3 w-3" /> Reiniciar draft de este juego
-          </button>
-        </div>
-      )}
+      {state.canAct && !game.winnerTeamId && !game.resetRequestedBy && <ResetControl state={state} game={game} busy={busy} send={send} />}
     </div>
   );
 }
@@ -738,6 +728,64 @@ function TurnBar({
         </div>
       )}
     </div>
+  );
+}
+
+/** Reiniciar un draft necesita a los dos equipos: uno lo pide y el otro acepta o rechaza. */
+function ResetControl({ state, game, busy, send }: { state: DraftStateDTO; game: DraftGameDTO; busy: boolean; send: Send }) {
+  const by = game.resetRequestedBy;
+  const cmd = (type: "reset" | "resetCancel", ok?: string) => send({ type, game: game.number }, ok);
+  if (!by)
+    return (
+      <div className="flex justify-center">
+        <button
+          onClick={() => {
+            if (confirm(`¿Pedir reiniciar el draft del juego ${game.number}? Se reinicia solo si [${state.rival.tag}] lo acepta: se borran sus baneos y picks y ambos equipos confirman de nuevo.`))
+              cmd("reset", `Solicitud enviada a [${state.rival.tag}]`);
+          }}
+          disabled={busy}
+          className="flex items-center gap-1.5 text-[11px] text-stone-400 hover:text-blood"
+        >
+          <RotateCcw className="h-3 w-3" /> Pedir reiniciar el draft de este juego
+        </button>
+      </div>
+    );
+  const mine = by === state.myTeam.id;
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 6 }}
+      animate={{ opacity: 1, y: 0 }}
+      className="mx-auto flex max-w-xl flex-col items-center gap-3 rounded-md border border-gold-500/50 bg-void-900/90 px-4 py-3 text-center sm:flex-row sm:text-left"
+    >
+      <RotateCcw className="h-5 w-5 shrink-0 text-gold-300" />
+      <p className="flex-1 text-sm text-stone-200">
+        {mine ? (
+          <>
+            Pediste reiniciar el draft del juego {game.number}. Esperando que <b className="text-gold-50">[{state.rival.tag}]</b> lo acepte.
+          </>
+        ) : (
+          <>
+            <b className="text-gold-50">[{state.rival.tag}]</b> pide reiniciar el draft del juego {game.number}: se borran los baneos y picks.
+          </>
+        )}
+      </p>
+      <div className="flex gap-2">
+        {mine ? (
+          <Button size="sm" variant="ghost" loading={busy} onClick={() => cmd("resetCancel", "Solicitud cancelada")}>
+            Cancelar solicitud
+          </Button>
+        ) : (
+          <>
+            <Button size="sm" variant="danger" loading={busy} onClick={() => cmd("reset", "Draft reiniciado")}>
+              Aceptar y reiniciar
+            </Button>
+            <Button size="sm" variant="ghost" disabled={busy} onClick={() => cmd("resetCancel", "Reinicio rechazado")}>
+              Rechazar
+            </Button>
+          </>
+        )}
+      </div>
+    </motion.div>
   );
 }
 

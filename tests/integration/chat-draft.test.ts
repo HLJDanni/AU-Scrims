@@ -66,7 +66,7 @@ describe("Integración · chat y draft del scrim", () => {
     expect((await c.get(`/api/scrims/${scrimId}/draft`)).status).toBe(404);
   });
 
-  it("I7 · draft: modo fearless, lados, listos, turnos, tiempo agotado y bloqueo de campeones entre juegos", async () => {
+  it("I7 · draft: modo fearless, lados, listos, turnos, tiempo agotado, bloqueo de campeones entre juegos y reinicio aprobado por ambos equipos", async () => {
     const [a, b] = tags.map((t) => users[t]);
     const champs = (await a.get("/api/champions")).body.champions.map((c: { id: string }) => c.id) as string[];
     expect(champs.length).toBeGreaterThan(150);
@@ -138,8 +138,20 @@ describe("Integración · chat y draft del scrim", () => {
     st = (await b.get(`/api/scrims/${scrimId}/draft`)).body;
     expect(st.games[1].actions[8]).toBe(champs[60]);
 
-    // Reiniciar el juego en curso
+    // Reiniciar necesita a los dos equipos: A lo pide y el draft sigue igual hasta que B acepta
     st = (await draft(a, { type: "reset", game: 2 })).body;
-    expect(st.games[1]).toMatchObject({ status: "READY_CHECK", step: 0, actions: [], blueReady: false, redReady: false });
+    expect(st.games[1]).toMatchObject({ status: "DRAFTING", step: 9, resetRequestedBy: ids[tags[0]] });
+    st = (await draft(a, { type: "reset", game: 2 })).body; // pedirlo otra vez no lo reinicia
+    expect(st.games[1]).toMatchObject({ status: "DRAFTING", step: 9 });
+    // B lo rechaza: no pasa nada; A lo pide de nuevo y B acepta
+    st = (await draft(b, { type: "resetCancel", game: 2 })).body;
+    expect(st.games[1]).toMatchObject({ status: "DRAFTING", step: 9, resetRequestedBy: null });
+    await draft(a, { type: "reset", game: 2 });
+    st = (await draft(b, { type: "reset", game: 2 })).body;
+    expect(st.games[1]).toMatchObject({ status: "READY_CHECK", step: 0, actions: [], blueReady: false, redReady: false, resetRequestedBy: null });
+    const chat = (await a.get(`/api/scrims/${scrimId}/messages`)).body.messages.map((m: { body: string }) => m.body).join(" | ");
+    expect(chat).toMatch(/pidió reiniciar el draft del juego 2/);
+    expect(chat).toMatch(/rechazó reiniciar/);
+    expect(chat).toMatch(/aceptó: el draft del juego 2 se reinició/);
   });
 });

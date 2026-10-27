@@ -205,24 +205,25 @@ enum DraftStatus {
 
 // Un juego de la serie con su draft (orden profesional: 6 baneos, 6 picks, 4 baneos, 4 picks)
 model DraftGame {
-  id           String      @id @default(cuid())
-  scrimId      String
-  scrim        Scrim       @relation(fields: [scrimId], references: [id], onDelete: Cascade)
-  number       Int
-  blueTeamId   String
-  redTeamId    String
-  sideChosenBy String // equipo que eligió el lado
-  status       DraftStatus @default(READY_CHECK)
-  blueReady    Boolean     @default(false)
-  redReady     Boolean     @default(false)
-  actions      Json        @default("[]") // id del campeón (o null si no baneó) en el orden del draft
-  step         Int         @default(0)
-  hover        String? // campeón que el equipo en turno tiene seleccionado sin confirmar
-  turnEndsAt   DateTime?
-  winnerTeamId String?
-  matchId      String?     @unique // Game ID de Riot (p. ej. LA1_1234567890) con el que se verificó el ganador
-  createdAt    DateTime    @default(now())
-  updatedAt    DateTime    @updatedAt
+  id               String      @id @default(cuid())
+  scrimId          String
+  scrim            Scrim       @relation(fields: [scrimId], references: [id], onDelete: Cascade)
+  number           Int
+  blueTeamId       String
+  redTeamId        String
+  sideChosenBy     String // equipo que eligió el lado
+  status           DraftStatus @default(READY_CHECK)
+  blueReady        Boolean     @default(false)
+  redReady         Boolean     @default(false)
+  actions          Json        @default("[]") // id del campeón (o null si no baneó) en el orden del draft
+  step             Int         @default(0)
+  hover            String? // campeón que el equipo en turno tiene seleccionado sin confirmar
+  turnEndsAt       DateTime?
+  winnerTeamId     String?
+  matchId          String?     @unique // Game ID de Riot (p. ej. LA1_1234567890) con el que se verificó el ganador
+  resetRequestedBy String? // equipo que pidió reiniciar el draft; se reinicia cuando el otro acepta
+  createdAt        DateTime    @default(now())
+  updatedAt        DateTime    @updatedAt
 
   @@unique([scrimId, number])
 }

@@ -103,6 +103,7 @@ export type DraftGameDTO = {
   turnEndsAt: string | null;
   winnerTeamId: string | null;
   matchId: string | null;
+  resetRequestedBy: string | null; // equipo que pidió reiniciar este draft (falta que el otro acepte)
 };
 
 export type DraftTeam = { id: string; name: string; tag: string; color: string; logoUpdatedAt: string | null };

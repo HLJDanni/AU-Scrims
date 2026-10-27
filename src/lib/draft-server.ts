@@ -42,6 +42,7 @@ export function toGameDTO(g: DraftGame): DraftGameDTO {
     turnEndsAt: g.turnEndsAt?.toISOString() ?? null,
     winnerTeamId: g.winnerTeamId,
     matchId: g.matchId,
+    resetRequestedBy: g.resetRequestedBy,
   };
 }
 
@@ -53,6 +54,7 @@ function lockedFor(scrim: ChatScrim, games: DraftGame[], number: number) {
   return fearlessLocked(games.filter((g) => g.number < number).map((g) => ({ actions: actionsOf(g) })));
 }
 
+const rivalOf = (scrim: ChatScrim, teamId: string) => (teamId === scrim.requesterTeamId ? scrim.opponentTeamId : scrim.requesterTeamId);
 const tagOf = (scrim: ChatScrim, teamId: string) => (teamId === scrim.requesterTeamId ? scrim.requesterTeam.tag : scrim.opponentTeam.tag);
 
 /** Resumen del draft terminado para el chat. */
@@ -144,7 +146,8 @@ export type DraftCommand =
   | { type: "lock"; game: number; step: number; champion: string | null }
   | { type: "winner"; game: number; teamId: string }
   | { type: "match"; game: number; matchId: string }
-  | { type: "reset"; game: number };
+  | { type: "reset"; game: number }
+  | { type: "resetCancel"; game: number };
 
 /** Ejecuta una acción del draft validando turnos, equipos y reglas. */
 export async function runCommand(scrim: ChatScrim, games: DraftGame[], user: { id: string; username: string; teamId: string }, cmd: DraftCommand) {
@@ -235,7 +238,7 @@ export async function runCommand(scrim: ChatScrim, games: DraftGame[], user: { i
       if (g.winnerTeamId === cmd.teamId) return;
       await db.$transaction(async (tx) => {
         // Un ganador manual reemplaza al verificado (por ejemplo, si se pegó un Game ID equivocado)
-        await tx.draftGame.update({ where: { id: g.id }, data: { winnerTeamId: cmd.teamId, matchId: null } });
+        await tx.draftGame.update({ where: { id: g.id }, data: { winnerTeamId: cmd.teamId, matchId: null, resetRequestedBy: null } });
         const more = g.number < scrim.games ? ` [${tagOf(scrim, cmd.teamId === g.blueTeamId ? g.redTeamId : g.blueTeamId)}] elige lado para el juego ${g.number + 1}.` : "";
         await systemMessage(tx, scrim.id, `${user.username} registró manualmente que [${tagOf(scrim, cmd.teamId)}] ganó el juego ${g.number}.${more}`);
       });
@@ -272,7 +275,7 @@ export async function runCommand(scrim: ChatScrim, games: DraftGame[], user: { i
       const winnerTeamId = blueWon ? g.blueTeamId : g.redTeamId;
       const loserTeamId = blueWon ? g.redTeamId : g.blueTeamId;
       await db.$transaction(async (tx) => {
-        await tx.draftGame.update({ where: { id: g.id }, data: { winnerTeamId, matchId } });
+        await tx.draftGame.update({ where: { id: g.id }, data: { winnerTeamId, matchId, resetRequestedBy: null } });
         const minutes = Math.round(result.durationSec / 60);
         const more = g.number < scrim.games ? ` [${tagOf(scrim, loserTeamId)}] elige lado para el juego ${g.number + 1}.` : "";
         await systemMessage(
@@ -285,14 +288,39 @@ export async function runCommand(scrim: ChatScrim, games: DraftGame[], user: { i
     }
 
     case "reset": {
+      // Reiniciar necesita a los dos equipos: uno lo pide y se reinicia cuando el otro acepta
       const g = needGame();
       if (g.winnerTeamId || games.some((x) => x.number > g.number)) fail(400, "Este juego ya cerró: no se puede repetir el draft");
-      await db.$transaction(async (tx) => {
-        await tx.draftGame.update({
-          where: { id: g.id },
-          data: { status: "READY_CHECK", blueReady: false, redReady: false, actions: [], step: 0, hover: null, turnEndsAt: null },
+      if (g.resetRequestedBy === user.teamId) return;
+      if (!g.resetRequestedBy) {
+        const res = await db.$transaction(async (tx) => {
+          const r = await tx.draftGame.updateMany({ where: { id: g.id, resetRequestedBy: null }, data: { resetRequestedBy: user.teamId } });
+          if (r.count) await systemMessage(tx, scrim.id, `${user.username} [${myTag}] pidió reiniciar el draft del juego ${g.number}. Se reinicia cuando [${tagOf(scrim, rivalOf(scrim, user.teamId))}] lo acepte.`);
+          return r.count;
         });
-        await systemMessage(tx, scrim.id, `${user.username} [${myTag}] reinició el draft del juego ${g.number}.`);
+        if (!res) fail(409, "El otro equipo acaba de pedir reiniciar: acepta su solicitud");
+        return;
+      }
+      await db.$transaction(async (tx) => {
+        const r = await tx.draftGame.updateMany({
+          where: { id: g.id, resetRequestedBy: g.resetRequestedBy },
+          data: { status: "READY_CHECK", blueReady: false, redReady: false, actions: [], step: 0, hover: null, turnEndsAt: null, resetRequestedBy: null },
+        });
+        if (!r.count) fail(409, "La solicitud de reinicio ya no está vigente");
+        await systemMessage(tx, scrim.id, `${user.username} [${myTag}] aceptó: el draft del juego ${g.number} se reinició. Ambos equipos deben confirmar de nuevo.`);
+      });
+      return;
+    }
+
+    case "resetCancel": {
+      // Quien lo pidió lo cancela; el otro equipo lo rechaza
+      const g = needGame();
+      if (!g.resetRequestedBy) return;
+      const own = g.resetRequestedBy === user.teamId;
+      await db.$transaction(async (tx) => {
+        const r = await tx.draftGame.updateMany({ where: { id: g.id, resetRequestedBy: g.resetRequestedBy }, data: { resetRequestedBy: null } });
+        if (r.count)
+          await systemMessage(tx, scrim.id, own ? `${user.username} [${myTag}] canceló su solicitud de reiniciar el draft del juego ${g.number}.` : `${user.username} [${myTag}] rechazó reiniciar el draft del juego ${g.number}.`);
       });
       return;
     }
