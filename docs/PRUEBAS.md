@@ -34,6 +34,7 @@ Las pruebas de caja negra, integración y E2E usan los usuarios demo y limpian l
 | Unitaria | U12 | `tests/unit/draft.test.ts` | Orden profesional del draft: 20 acciones, 5 baneos y 5 picks por lado, fases y slots | ✅ |
 | Unitaria | U13 | `tests/unit/draft.test.ts` | Fearless bloquea lo elegido (no lo baneado) en juegos anteriores; elección de lado: invitado en el juego 1, luego el perdedor | ✅ |
 | Unitaria | U14 | `tests/unit/riot.test.ts` | Game ID: formatos aceptados (con o sin servidor), clúster de match-v5 (OCE → sea), ganador y campeones por lado, detección de lados cambiados y partida inexistente | ✅ |
+| Unitaria | U15 | `tests/unit/champion-roles.test.ts` | Draft: cada campeón tiene su posición (Top, Jungla, Medio, ADC, Soporte) y los campeones nuevos se asignan por su clase | ✅ |
 | Unitaria | S1 | `tests/unit/swiss.test.ts` | Motor suizo: ronda 1 por siembra, Bo3 en partidos decisivos, descanso con impares (una vez por equipo), torneos de 4 a 16 equipos terminan en ≤5 partidos por equipo y nunca hay revancha si existía alternativa | ✅ |
 | Unitaria | S2 | `tests/unit/swiss.test.ts` | Elegibilidad: Barón (Maestro+), Heraldo (Platino II–Diamante I, límites incluidos), rechazo por rating, victorias, roster o ELO; suplentes fuera del promedio | ✅ |
 | Caja blanca | W1 | `tests/whitebox/scrim-dto.test.ts` | `toDTO`: ramas anfitrión/invitado (marcador y delta invertidos), valores nulos | ✅ |
@@ -129,6 +130,7 @@ Además de las pruebas automatizadas, se hizo una verificación manual de los en
 | CA-35 | Un equipo tiene como máximo 3 suplentes | I3; en la interfaz el botón Suplente se desactiva al llegar a 3 y el contador muestra 3/3 | ✅ Cumple |
 | CA-36 | Al terminar un juego se pega el Game ID y la victoria se asigna al lado que ganó según Riot | U14, I10; revisado en el navegador (campo Game ID, error claro si Riot no la encuentra, registro manual como alternativa) | ✅ Cumple |
 | CA-37 | Solo un administrador de la app puede eliminar scrims (por ejemplo, de prueba), revirtiendo sus puntos | I11; revisado en el navegador (sección Administración, búsqueda y confirmación) | ✅ Cumple |
+| CA-38 | En el draft los campeones se filtran por posición, no por clase | U15; revisado en el navegador (filtros Jungla y Soporte) | ✅ Cumple |
 
 ## Hallazgos corregidos durante las pruebas
 

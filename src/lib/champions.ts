@@ -1,12 +1,13 @@
 import "server-only";
 import { fail } from "./api";
+import { rolesFor, type Lane } from "./champion-roles";
 
 // Lista oficial de campeones desde Data Dragon (CDN público de Riot, no usa la API key).
 // Se guarda en memoria unas horas: cambia solo con cada parche.
 const DDRAGON = "https://ddragon.leagueoflegends.com";
 const TTL_MS = 6 * 3600_000;
 
-export type Champion = { id: string; name: string; tags: string[] };
+export type Champion = { id: string; name: string; roles: Lane[] };
 type ChampionCache = { version: string; list: Champion[]; ids: Set<string>; at: number };
 let cache: ChampionCache | null = null;
 let loading: Promise<ChampionCache> | null = null;
@@ -18,7 +19,7 @@ async function load(): Promise<ChampionCache> {
   if (!res.ok) throw new Error(`Data Dragon respondió ${res.status}`);
   const json = (await res.json()) as { data: Record<string, { id: string; name: string; tags: string[] }> };
   const list = Object.values(json.data)
-    .map((c) => ({ id: c.id, name: c.name, tags: c.tags }))
+    .map((c) => ({ id: c.id, name: c.name, roles: rolesFor(c.id, c.tags) }))
     .sort((a, b) => a.name.localeCompare(b.name, "es"));
   return { version, list, ids: new Set(list.map((c) => c.id)), at: Date.now() };
 }

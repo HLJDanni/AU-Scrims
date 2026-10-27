@@ -19,24 +19,25 @@ import {
   type DraftTeam,
   type Side,
 } from "@/lib/draft";
+import type { Lane } from "@/lib/champion-roles";
 import { Button } from "../ui/button";
 import { Skeleton, TeamEmblem } from "../ui/misc";
 
-type Champion = { id: string; name: string; tags: string[] };
+type Champion = { id: string; name: string; roles: Lane[] };
 type ChampData = { version: string; champions: Champion[] };
 
 const SIDE = {
   BLUE: { label: "Lado azul", color: "#3FA9F5", glow: "rgba(63,169,245,.55)", soft: "rgba(63,169,245,.14)" },
   RED: { label: "Lado rojo", color: "#E84057", glow: "rgba(232,64,87,.55)", soft: "rgba(232,64,87,.14)" },
 } as const;
-const ROLES = [
+const POSITION_ICON = "https://raw.communitydragon.org/latest/plugins/rcp-fe-lol-clash/global/default/assets/images/position-selector/positions/icon-position-";
+const ROLES: { id: Lane | ""; label: string }[] = [
   { id: "", label: "Todos" },
-  { id: "Fighter", label: "Luchador" },
-  { id: "Tank", label: "Tanque" },
-  { id: "Mage", label: "Mago" },
-  { id: "Assassin", label: "Asesino" },
-  { id: "Marksman", label: "Tirador" },
-  { id: "Support", label: "Soporte" },
+  { id: "TOP", label: "Top" },
+  { id: "JUNGLE", label: "Jungla" },
+  { id: "MIDDLE", label: "Medio" },
+  { id: "BOTTOM", label: "ADC" },
+  { id: "UTILITY", label: "Soporte" },
 ];
 const DD = "https://ddragon.leagueoflegends.com/cdn";
 const iconUrl = (v: string, id: string) => `${DD}/${v}/img/champion/${id}.png`;
@@ -756,10 +757,10 @@ function ChampionGrid({
   onChoose: (id: string) => void;
 }) {
   const [q, setQ] = useState("");
-  const [role, setRole] = useState("");
+  const [role, setRole] = useState<Lane | "">("");
   const list = useMemo(() => {
     const term = q.trim().toLowerCase();
-    return champs.champions.filter((c) => (!term || c.name.toLowerCase().includes(term) || c.id.toLowerCase().includes(term)) && (!role || c.tags.includes(role)));
+    return champs.champions.filter((c) => (!term || c.name.toLowerCase().includes(term) || c.id.toLowerCase().includes(term)) && (!role || c.roles.includes(role)));
   }, [champs, q, role]);
 
   return (
@@ -774,8 +775,11 @@ function ChampionGrid({
             <button
               key={r.id}
               onClick={() => setRole(r.id)}
-              className={cn("rounded px-2 py-1 text-[11px] font-semibold transition", role === r.id ? "bg-gold-gradient text-void-950" : "text-stone-300 hover:bg-void-700 hover:text-gold-50")}
+              aria-pressed={role === r.id}
+              title={r.label}
+              className={cn("flex items-center gap-1 rounded px-2 py-1 text-[11px] font-semibold transition", role === r.id ? "bg-gold-gradient text-void-950" : "text-stone-300 hover:bg-void-700 hover:text-gold-50")}
             >
+              {r.id && <img src={`${POSITION_ICON}${r.id.toLowerCase()}.png`} alt="" className={cn("h-4 w-4", role === r.id && "brightness-0")} />}
               {r.label}
             </button>
           ))}
