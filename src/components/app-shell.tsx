@@ -2,7 +2,7 @@
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { AnimatePresence, motion } from "framer-motion";
-import { CalendarDays, Crown, LayoutDashboard, LogOut, Menu, MessagesSquare, Plus, Swords, Trophy, Users, X } from "lucide-react";
+import { CalendarDays, Crown, LayoutDashboard, LogOut, Menu, MessagesSquare, Plus, ShieldAlert, Swords, Trophy, Users, X } from "lucide-react";
 import { createContext, useContext, useState } from "react";
 import { SWRConfig } from "swr";
 import useSWR from "swr";
@@ -19,6 +19,7 @@ export type ShellUser = {
   id: string;
   username: string;
   role: Role;
+  isAdmin?: boolean;
   team: { id: string; name: string; tag: string; color: string; region: string; rating: number; logoUpdatedAt?: string | Date | null } | null;
 };
 
@@ -46,6 +47,7 @@ const NAV = [
   { href: "/leaderboard", label: "Ranking", icon: Trophy },
   { href: "/tournaments", label: "Torneos", icon: Crown },
   { href: "/team", label: "Mi equipo", icon: Users, team: true },
+  { href: "/admin", label: "Administración", icon: ShieldAlert, admin: true },
 ];
 
 export function AppShell({ user, children }: { user: ShellUser; children: React.ReactNode }) {
@@ -115,8 +117,8 @@ export function AppShell({ user, children }: { user: ShellUser; children: React.
                     </>
                   ) : (
                     <div className="leading-tight">
-                      <p className="font-display text-sm font-bold tracking-wide text-gold-50">Modo espectador</p>
-                      <p className="text-[11px] text-stone-400">Leyenda sin equipo · ranking, jugadores y torneos</p>
+                      <p className="font-display text-sm font-bold tracking-wide text-gold-50">{user.isAdmin ? "Administrador de la app" : "Modo espectador"}</p>
+                      <p className="text-[11px] text-stone-400">{user.isAdmin ? "Administración de scrims · ranking y torneos" : "Leyenda sin equipo · ranking, jugadores y torneos"}</p>
                     </div>
                   )}
                 </div>
@@ -170,7 +172,7 @@ function Sidebar({ user, onNavigate }: { user: ShellUser; onNavigate?: () => voi
       </div>
       <div className="divider-gold mx-5 mb-4 w-auto" />
       <nav className="flex-1 space-y-1 px-3">
-        {NAV.filter((item) => (!item.team || user.team) && (!item.staff || canAct)).map((item) => {
+        {NAV.filter((item) => (!item.team || user.team) && (!item.staff || canAct) && (!item.admin || user.isAdmin)).map((item) => {
           const active = pathname.startsWith(item.href);
           const Icon = item.icon;
           return (
@@ -212,7 +214,11 @@ function Sidebar({ user, onNavigate }: { user: ShellUser; onNavigate?: () => voi
           </div>
           <div className="min-w-0 flex-1">
             <p className="truncate text-sm font-semibold text-gold-50">{user.username}</p>
-            <RoleBadge role={user.role} />
+            {user.isAdmin ? (
+              <span className="inline-flex rounded border border-blood/50 bg-blood/10 px-2 py-0.5 text-[10px] font-bold uppercase tracking-widest text-blood">Admin</span>
+            ) : (
+              <RoleBadge role={user.role} />
+            )}
           </div>
           <button onClick={logout} className="rounded-md p-2 text-stone-400 transition hover:bg-void-700 hover:text-blood" aria-label="Cerrar sesión" title="Cerrar sesión">
             <LogOut className="h-4 w-4" />

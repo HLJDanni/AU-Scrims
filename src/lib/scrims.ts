@@ -94,4 +94,29 @@ export async function logEvent(tx: Prisma.TransactionClient, scrimId: string, ac
   return event;
 }
 
+/**
+ * Elimina un scrim por completo (solo el administrador de la app): se borran su chat, su draft y su bitácora.
+ * Si tenía resultado, los puntos del ranking vuelven a como estaban para ambos equipos (sin bajar de 0).
+ */
+export async function deleteScrim(id: string) {
+  return db.$transaction(async (tx) => {
+    const scrim = await tx.scrim.findUnique({ where: { id } });
+    if (!scrim) fail(404, "Scrim no encontrado");
+    let pointsReverted = false;
+    if (scrim!.status === "COMPLETED" && scrim!.ratingDelta != null) {
+      const deltas = [
+        [scrim!.requesterTeamId, scrim!.ratingDelta],
+        [scrim!.opponentTeamId, scrim!.opponentRatingDelta ?? -scrim!.ratingDelta],
+      ] as const;
+      for (const [teamId, delta] of deltas) {
+        const t = await tx.team.findUniqueOrThrow({ where: { id: teamId }, select: { rating: true } });
+        await tx.team.update({ where: { id: teamId }, data: { rating: Math.max(0, t.rating - delta) } });
+      }
+      pointsReverted = true;
+    }
+    await tx.scrim.delete({ where: { id } });
+    return { pointsReverted };
+  });
+}
+
 export const teamLabel = (t: Pick<Team, "tag">) => `[${t.tag}]`;

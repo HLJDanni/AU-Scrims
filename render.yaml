@@ -22,3 +22,7 @@ services:
         value: "false"
       - key: RIOT_API_KEY
         sync: false
+      - key: ADMIN_USERNAME # administrador de la app (panel Administración)
+        sync: false
+      - key: ADMIN_PASSWORD # mínimo 12 caracteres; cámbiala aquí y redespliega para rotarla
+        sync: false

@@ -42,6 +42,8 @@ No hace falta crear tablas: el contenedor aplica las migraciones solo al iniciar
    | `DATABASE_URL` | La cadena **pooled** de Neon |
    | `DIRECT_URL` | La cadena **direct** de Neon |
    | `RIOT_API_KEY` | Tu clave de Riot (puedes dejarla vacía y agregarla después) |
+   | `ADMIN_USERNAME` | Usuario del administrador de la app, por ejemplo `admin.auscrims` |
+   | `ADMIN_PASSWORD` | Contraseña del administrador, **mínimo 12 caracteres**, inventada por ti y guardada en un gestor de contraseñas |
 
    Render llena las demás solo:
    - `JWT_SECRET`: lo genera aleatorio.
@@ -53,6 +55,12 @@ No hace falta crear tablas: el contenedor aplica las migraciones solo al iniciar
 7. Comprueba la base de datos en `https://<tu-app>.onrender.com/api/health?db=1`. Debe responder `{"ok":true,"db":true}`.
 
 Desde ese momento, cada `git push` a `main` vuelve a desplegar solo.
+
+### Administrador de la app
+
+La cuenta de administrador no se registra desde la web: se crea sola al iniciar el contenedor con `ADMIN_USERNAME` y `ADMIN_PASSWORD`. Entra con ella en `/login` y verás la sección **Administración**, donde puedes eliminar cualquier scrim (por ejemplo, uno de prueba): se borra para ambos equipos con su chat y su draft, y si tenía resultado se revierten los puntos del ranking. Ningún equipo, ni su coach, puede hacerlo.
+
+Para cambiar la contraseña, edita `ADMIN_PASSWORD` en **Environment** (Render redespliega solo). Si alguien más llegara a conocerla, cámbiala de inmediato.
 
 ### Datos de ejemplo (opcional, para una demostración)
 

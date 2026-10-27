@@ -65,7 +65,7 @@ beforeAll(async () => {
 
 afterAll(async () => {
   await db.team.deleteMany({ where: { tag: { in: tags } } });
-  await db.user.deleteMany({ where: { username: { in: tags.map((t) => `coach.${t.toLowerCase()}`) } } });
+  await db.user.deleteMany({ where: { username: { in: [...tags.map((t) => `coach.${t.toLowerCase()}`), `admin.${tags[0].toLowerCase()}`] } } });
   await db.$disconnect();
 });
 
@@ -108,5 +108,34 @@ describe("Integración · ganador del juego por Game ID", () => {
     const result = await host.post(`/api/scrims/${scrimId}/result`, { myScore: 1, opponentScore: 1 });
     expect(result.status).toBe(200);
     expect((await host.get(`/api/scrims/${scrimId}/draft`)).body.scrim.status).toBe("COMPLETED");
+  });
+
+  it("I11 · solo el administrador de la app elimina un scrim: desaparece con su chat y draft y los puntos vuelven a como estaban", async () => {
+    const teams = () => db.team.findMany({ where: { id: { in: [ids[tags[0]], ids[tags[1]]] } }, orderBy: { tag: "asc" }, select: { rating: true } });
+    const scrim = await db.scrim.create({
+      data: { requesterTeamId: ids[tags[0]], opponentTeamId: ids[tags[1]], startAt: new Date(Date.now() - 4 * 3600_000), endAt: new Date(Date.now() - 2 * 3600_000), games: 3, status: "CONFIRMED" },
+    });
+    const before = await teams();
+    expect((await host.post(`/api/scrims/${scrim.id}/result`, { myScore: 3, opponentScore: 0 })).status).toBe(200);
+    expect(await teams()).not.toEqual(before);
+    await host.post(`/api/scrims/${scrim.id}/messages`, { body: "gg, era de prueba" });
+
+    // Ningún equipo puede borrarlo, ni siquiera su coach
+    expect((await host.req("DELETE", `/api/admin/scrims/${scrim.id}`)).status).toBe(403);
+    expect((await host.get("/api/admin/scrims")).status).toBe(403);
+    expect((await host.req("DELETE", `/api/scrims/${scrim.id}`)).status).toBe(405);
+
+    // El administrador (cuenta sin equipo con isAdmin) sí
+    const adminName = `admin.${tags[0].toLowerCase()}`;
+    await db.user.create({ data: { username: adminName, email: `${adminName}@test.dev`, passwordHash: await bcrypt.hash(PASS, 8), role: "LEGEND", isAdmin: true } });
+    const admin = await new ApiClient().login(adminName, PASS);
+    const list = await admin.get(`/api/admin/scrims?q=${tags[0]}`);
+    expect(list.body.scrims.some((x: { id: string }) => x.id === scrim.id)).toBe(true);
+    const removed = await admin.req("DELETE", `/api/admin/scrims/${scrim.id}`);
+    expect(removed.status).toBe(200);
+    expect(removed.body.pointsReverted).toBe(true);
+    expect(await teams()).toEqual(before);
+    expect(await db.scrim.count({ where: { id: scrim.id } })).toBe(0);
+    expect(await db.scrimMessage.count({ where: { scrimId: scrim.id } })).toBe(0);
   });
 });

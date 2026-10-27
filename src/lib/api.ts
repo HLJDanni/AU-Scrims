@@ -68,6 +68,14 @@ export function withStaff<C = Record<string, string>>(handler: (ctx: { req: Requ
   });
 }
 
+/** Exige ser administrador de la app (cuenta creada desde ADMIN_USERNAME/ADMIN_PASSWORD). */
+export function withAdmin<C = Record<string, string>>(handler: Handler<C>) {
+  return withUser<C>(async (ctx) => {
+    if (!ctx.user.isAdmin) fail(403, "Solo el administrador de la app puede hacer esto");
+    return handler(ctx);
+  });
+}
+
 /** Handler público (sin sesión) con el mismo manejo de errores. */
 export function publicRoute(handler: (req: Request) => Promise<unknown>) {
   return async (req: Request) => {

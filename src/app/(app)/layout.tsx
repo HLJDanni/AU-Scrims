@@ -7,7 +7,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
   const user = await requirePageUser({ needsTeam: false });
   if (!user.teamId && user.role !== "LEGEND") redirect("/onboarding");
   return (
-    <AppShell user={{ id: user.id, username: user.username, role: user.role, team: user.team }}>
+    <AppShell user={{ id: user.id, username: user.username, role: user.role, isAdmin: user.isAdmin, team: user.team }}>
       {children}
     </AppShell>
   );

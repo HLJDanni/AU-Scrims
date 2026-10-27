@@ -1,6 +1,6 @@
 # Plan y resultados de pruebas · AU Scrims
 
-**Fecha de ejecución:** 24/10/2026 · **Entorno:** Docker local (app `:3000`, PostgreSQL `:5434`), datos demo · **Resultado global:** 35/35 pruebas automatizadas aprobadas
+**Fecha de ejecución:** 24/10/2026 · **Entorno:** Docker local (app `:3000`, PostgreSQL `:5434`), datos demo · **Resultado global:** 36/36 pruebas automatizadas (las 3 que consultan a Riot requieren una RIOT_API_KEY vigente)
 
 ## Cómo ejecutarlas
 
@@ -53,6 +53,7 @@ Las pruebas de caja negra, integración y E2E usan los usuarios demo y limpian l
 | Integración | I8 | `tests/integration/team-identity.test.ts` | Imagen del equipo validada por contenido (un SVG disfrazado de PNG da 422), servida con CSP y solo con sesión; el capitán edita el emblema pero no el nombre (403); solo el coach asigna roles y no puede quedarse el equipo sin coach | ✅ |
 | Integración | I9 | `tests/integration/team-identity.test.ts` | La Leyenda que se une con código debe dar su op.gg (422 sin él o de otro servidor); entra al roster con su cuenta, sigue sin poder editarlo y, si el coach la quita, sale del roster | ✅ |
 | Integración | I10 | `tests/integration/match-result.test.ts` | Con la clave real y una partida pública de KR: ID inválido o inexistente 422, victoria asignada al equipo correcto con lados cambiados, aviso en el chat, ID repetido 409, campeones que no coinciden 409 y marcador de la serie al ranking | ✅ |
+| Integración | I11 | `tests/integration/match-result.test.ts` | Eliminar scrims: el coach recibe 403 (y la ruta del equipo ya no existe, 405); el administrador lista todos los scrims, elimina uno con resultado y los puntos de ambos equipos vuelven a como estaban; se borran su chat y su draft | ✅ |
 | End-to-end | E1 | `tests/e2e/schedule-flow.spec.ts` | Crea su propio equipo, rival y coach temporales (y los borra al terminar). En el navegador: login → agendar con 5 juegos y link → Enviadas → detalle → Sala → copiar invitación → Actividad → cancelar | ✅ |
 | End-to-end | E2 | `tests/e2e/schedule-flow.spec.ts` | Con un scrim confirmado a 6 min: el aviso aparece con minutos restantes, cuenta regresiva y botón para unirse a la sala; al descartarlo desaparece y no vuelve al recargar | ✅ |
 
@@ -127,6 +128,7 @@ Además de las pruebas automatizadas, se hizo una verificación manual de los en
 | CA-34 | La Leyenda que se une con código da su op.gg y queda integrada al roster del equipo | I9; revisado en el navegador (formulario de registro con op.gg y posición) | ✅ Cumple |
 | CA-35 | Un equipo tiene como máximo 3 suplentes | I3; en la interfaz el botón Suplente se desactiva al llegar a 3 y el contador muestra 3/3 | ✅ Cumple |
 | CA-36 | Al terminar un juego se pega el Game ID y la victoria se asigna al lado que ganó según Riot | U14, I10; revisado en el navegador (campo Game ID, error claro si Riot no la encuentra, registro manual como alternativa) | ✅ Cumple |
+| CA-37 | Solo un administrador de la app puede eliminar scrims (por ejemplo, de prueba), revirtiendo sus puntos | I11; revisado en el navegador (sección Administración, búsqueda y confirmación) | ✅ Cumple |
 
 ## Hallazgos corregidos durante las pruebas
 

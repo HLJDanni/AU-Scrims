@@ -33,6 +33,7 @@ export async function getCurrentUser() {
       email: true,
       username: true,
       role: true,
+      isAdmin: true,
       teamId: true,
       team: { select: { id: true, name: true, tag: true, color: true, logoUpdatedAt: true, region: true, rating: true } },
     },

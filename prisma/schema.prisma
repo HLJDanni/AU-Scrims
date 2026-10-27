@@ -68,6 +68,8 @@ model User {
   username     String   @unique
   passwordHash String
   role         Role
+  // Administrador de la app (no de un equipo): puede eliminar cualquier scrim. Solo se crea desde variables de entorno
+  isAdmin      Boolean  @default(false)
   teamId       String?
   team         Team?    @relation(fields: [teamId], references: [id], onDelete: SetNull)
   createdAt    DateTime @default(now())
